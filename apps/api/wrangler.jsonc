@@ -2,13 +2,10 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "api",
   "main": "src/index.ts",
-  "compatibility_date": "2026-04-16"
-  // "compatibility_flags": [
-  //   "nodejs_compat"
-  // ],
-  // "vars": {
-  //   "MY_VAR": "my-variable"
-  // },
+  "compatibility_date": "2026-04-16",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   // "kv_namespaces": [
   //   {
   //     "binding": "MY_KV_NAMESPACE",
@@ -21,13 +18,14 @@
   //     "bucket_name": "my-bucket"
   //   }
   // ],
-  // "d1_databases": [
-  //   {
-  //     "binding": "MY_DB",
-  //     "database_name": "my-database",
-  //     "database_id": ""
-  //   }
-  // ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sekolah",
+      "database_id": "e60e472d-ac1c-4c7c-b8fd-3cff0247a7ee",
+      "migrations_dir": "drizzle/migrations"
+    }
+  ],
   // "ai": {
   //   "binding": "AI"
   // },
