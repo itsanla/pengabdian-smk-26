@@ -6,31 +6,15 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
-  // "kv_namespaces": [
-  //   {
-  //     "binding": "MY_KV_NAMESPACE",
-  //     "id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-  //   }
-  // ],
-  // "r2_buckets": [
-  //   {
-  //     "binding": "MY_BUCKET",
-  //     "bucket_name": "my-bucket"
-  //   }
-  // ],
+    "vars": {
+    "CLOUDINARY_CLOUD_NAME": "dn8cktife"
+  },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "sekolah",
-      "database_id": "e60e472d-ac1c-4c7c-b8fd-3cff0247a7ee",
+      "database_id": "4f67f163-452a-4a19-aa37-0982b34b2e06",
       "migrations_dir": "drizzle"
     }
   ],
-  // "ai": {
-  //   "binding": "AI"
-  // },
-  // "observability": {
-  //   "enabled": true,
-  //   "head_sampling_rate": 1
-  // }
 }
