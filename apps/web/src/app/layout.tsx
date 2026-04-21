@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/landing/ui/toaster";
@@ -15,6 +15,17 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
 
 export const metadata: Metadata = {
   title: {
@@ -86,11 +97,34 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    name: "SMK Negeri 2 Batusangkar",
+    alternateName: "SMKN 2 Batusangkar",
+    url: "https://smk2batusangkar.tech",
+    logo: "https://smk2batusangkar.tech/image/fotosama.webp",
+    description:
+      "SMK Negeri 2 Batusangkar adalah sekolah menengah kejuruan negeri terakreditasi B dengan program keahlian Teknik Pengelasan, Teknik Kendaraan Ringan Otomotif, Agribisnis, dan Teaching Factory (TEFA).",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Jl. Raya Bukit Gombak",
+      addressLocality: "Lima Kaum",
+      addressRegion: "Tanah Datar, Sumatera Barat",
+      addressCountry: "ID",
+    },
+    sameAs: ["https://smk2batusangkar.tech"],
+  };
+
   return (
     <html lang="id">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         <AuthGuard>{children}</AuthGuard>
         <Toaster/>
         <SonnerToaster position="top-right" richColors />
