@@ -1,14 +1,23 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import HeroSection from "../components/landing/HeroSection";
+import TefaHybrid from "../components/landing/TefaHybrid";
+import ProfileSekolah from "../components/landing/Profilesekolah";
+import InfoSekolah from "../components/landing/Infosekolah";
+import Jurusans from "../components/landing/Jurusan";
+import Mitras from "../components/landing/Mitra";
+import Footer from "../components/landing/Footer";
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/landing");
-  }, [router]);
-
-  return null;
+  return (
+    <>
+      <HeroSection />
+      <TefaHybrid />
+      <ProfileSekolah />
+      <InfoSekolah />
+      <Jurusans />
+      <Mitras />
+      <Footer />
+    </>
+  );
 }

@@ -16,7 +16,7 @@ export async function verifyToken(
   secret: string = DEFAULT_SECRET,
 ): Promise<AuthUser | null> {
   try {
-    const decoded = (await verify(token, secret, "HS256")) as AuthUser & {
+    const decoded = (await verify(token, secret, "HS256")) as unknown as AuthUser & {
       exp?: number;
     };
     return {
