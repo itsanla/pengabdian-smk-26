@@ -22,7 +22,10 @@ export async function uploadImageToCloudinary(
   }
 
   const timestamp = Math.floor(Date.now() / 1000).toString();
-  const paramsToSign = `folder=${folder}&timestamp=${timestamp}`;
+  
+  // Eager transformation: resize to max 1200px width, convert to WebP, quality auto
+  const eagerTransform = "f_webp,q_auto:good,w_1200,c_limit";
+  const paramsToSign = `eager=${eagerTransform}&folder=${folder}&timestamp=${timestamp}`;
   const signature = await sha1Hex(paramsToSign + apiSecret);
 
   const form = new FormData();
@@ -30,6 +33,7 @@ export async function uploadImageToCloudinary(
   form.append("api_key", apiKey);
   form.append("timestamp", timestamp);
   form.append("folder", folder);
+  form.append("eager", eagerTransform);
   form.append("signature", signature);
 
   const res = await fetch(
@@ -42,7 +46,16 @@ export async function uploadImageToCloudinary(
     throw new Error(`Upload gagal: ${body}`);
   }
 
-  const json = (await res.json()) as { secure_url?: string };
+  const json = (await res.json()) as { 
+    secure_url?: string;
+    eager?: Array<{ secure_url: string }>;
+  };
+  
+  // Return WebP version if eager transformation succeeded
+  if (json.eager && json.eager[0]?.secure_url) {
+    return json.eager[0].secure_url;
+  }
+  
   if (!json.secure_url) throw new Error("Upload gagal: no secure_url returned");
   return json.secure_url;
 }
