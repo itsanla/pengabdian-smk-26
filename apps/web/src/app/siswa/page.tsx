@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp, ShoppingCart, Receipt, AlertCircle, Package } from "lucide-react";
 import { Komoditas, Penjualan, Produksi } from "@/types";
 import { DataTable } from "@/components/table/DataTable";
@@ -10,6 +10,7 @@ import ToggleDark from "@/components/common/ToggleDark";
 import { toast } from "sonner";
 import { apiRequest } from "@/services/api.service";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import { printStruk } from "@/components/struk/StrukPembelian";
 
 export default function KasirPage() {
   const username =
@@ -44,6 +45,8 @@ export default function KasirPage() {
   });
 
   const [showPenjualan, setShowPenjualan] = useState(false);
+  const [cetakStruk, setCetakStruk] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Get unique komoditas from produksi data - Fixed property name
   const uniqueKomoditas = produksi.reduce((acc, prod) => {
@@ -60,6 +63,17 @@ export default function KasirPage() {
     : produksi;
 
   useEffect(() => {
+    const fetchPreference = async () => {
+      try {
+        const data = await apiRequest({ endpoint: "/user/preference" });
+        if (typeof data?.print_struk === "boolean") {
+          setCetakStruk(data.print_struk);
+        }
+      } catch {
+        // silently keep default
+      }
+    };
+
     const fetchData = async () => {
       try {
         setError(null);
@@ -88,6 +102,7 @@ export default function KasirPage() {
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    fetchPreference();
     fetchData();
 
     return () => {
@@ -120,6 +135,22 @@ export default function KasirPage() {
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleCetakStrukChange = (checked: boolean) => {
+    setCetakStruk(checked);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        await apiRequest({
+          endpoint: "/user/preference",
+          method: "PUT",
+          data: { print_struk: checked },
+        });
+      } catch {
+        // silently ignore preference save errors
+      }
+    }, 500);
   };
 
 const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
@@ -187,6 +218,26 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
         method: "POST",
         data: requestBody,
       });
+
+      if (cetakStruk) {
+        const selectedKomoditas = produksi.find((p) => p.id === formData.id_produksi)?.komoditas;
+        const selectedProd = produksi.find((p) => p.id === formData.id_produksi);
+        if (selectedKomoditas && selectedProd) {
+          printStruk({
+            namaKomoditas: selectedKomoditas.nama,
+            satuanKomoditas: selectedKomoditas.satuan,
+            kodeProduksi: selectedProd.kode_produksi,
+            ukuran: selectedProd.ukuran,
+            kualitas: selectedProd.kualitas,
+            asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
+            hargaPersatuan: selectedProd.harga_persatuan,
+            jumlahTerjual: formData.jumlah_terjual,
+            totalHarga: formData.total_harga,
+            keterangan: formData.keterangan,
+            tanggal: new Date(),
+          });
+        }
+      }
 
       // Refresh data
       const [dataPenjualan, dataProduksi] = await Promise.all([
@@ -526,6 +577,16 @@ const NUMBER_FIELDS = ["jumlah_terjual", "id_komodity", "id_produksi"];
                   className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
+
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+              <input
+                type="checkbox"
+                checked={cetakStruk}
+                onChange={(e) => handleCetakStrukChange(e.target.checked)}
+                className="w-4 h-4 accent-blue-600"
+              />
+              Cetak Struk Pembelian
+            </label>
 
             <Button
               type="submit"

@@ -3,7 +3,8 @@
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { apiRequest } from '@/services/api.service';
 import toast from 'react-hot-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { printStruk } from '@/components/struk/StrukPembelian';
 
 interface ModalProps {
     isOpen: boolean;
@@ -12,7 +13,6 @@ interface ModalProps {
 }
 
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
-    // Handle ESC key to close modal
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
             if (event.key === 'Escape') onClose();
@@ -27,7 +27,6 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
         };
     }, [isOpen, onClose]);
 
-    // Handle click outside to close
     const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) onClose();
     };
@@ -71,13 +70,17 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
     const [jumlah_terjual, setJumlah_Terjual] = useState('');
     const [keterangan, setKeterangan] = useState('');
     const [loading, setLoading] = useState(false);
+    const [cetakStruk, setCetakStruk] = useState(true);
 
     const [komodityList, setKomodityList] = useState<any[]>([]);
     const [produksiList, setProduksiList] = useState<any[]>([]);
 
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         fetchDataKomodity();
         fetchDataProduksi();
+        fetchPreference();
 
         if (formMode === 'update' && initialData) {
             setIdKomodity(initialData.id_komodity.toString() || "");
@@ -87,11 +90,20 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
         }
     }, [formMode, initialData]);
 
+    const fetchPreference = async () => {
+        try {
+            const data = await apiRequest({ endpoint: '/user/preference' });
+            if (typeof data?.print_struk === 'boolean') {
+                setCetakStruk(data.print_struk);
+            }
+        } catch {
+            // silently keep default
+        }
+    };
+
     const fetchDataKomodity = async () => {
         try {
-            const data = await apiRequest({
-                endpoint: '/komoditas',
-            });
+            const data = await apiRequest({ endpoint: '/komoditas' });
             setKomodityList(Array.isArray(data) ? data : [data]);
         } catch (error) {
             console.error('Error fetching komoditas:', error);
@@ -101,9 +113,7 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
 
     const fetchDataProduksi = async () => {
         try {
-            const data = await apiRequest({
-                endpoint: '/produksi',
-            });
+            const data = await apiRequest({ endpoint: '/produksi' });
             setProduksiList(Array.isArray(data) ? data : [data]);
         } catch (error) {
             console.error('Error fetching produksi:', error);
@@ -111,14 +121,38 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
         }
     };
 
+    const handleCetakStrukChange = (checked: boolean) => {
+        setCetakStruk(checked);
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                await apiRequest({
+                    endpoint: '/user/preference',
+                    method: 'PUT',
+                    data: { print_struk: checked },
+                });
+            } catch {
+                // silently ignore preference save errors
+            }
+        }, 500);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
 
+        const selectedKomoditas = komodityList.find((k) => k.id === parseInt(id_komodity));
+        const selectedProduksi = produksiList.find((p) => p.id === parseInt(id_produksi));
+        const jumlah = parseInt(jumlah_terjual);
+        const harga = selectedProduksi?.harga_persatuan ?? 0;
+        const total_harga = jumlah * harga;
+
         const payload = {
             id_komodity: parseInt(id_komodity),
             id_produksi: parseInt(id_produksi),
-            jumlah_terjual: parseInt(jumlah_terjual),
+            jumlah_terjual: jumlah,
+            total_harga,
             keterangan,
         };
 
@@ -126,13 +160,26 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
             const endpoint = formMode === 'create' ? '/penjualan' : `/penjualan/${initialData.id}`;
             const method = formMode === 'create' ? 'POST' : 'PUT';
 
-            await apiRequest({
-                endpoint,
-                method,
-                data: payload,
-            });
+            await apiRequest({ endpoint, method, data: payload });
 
             toast.success(formMode === 'create' ? 'Data berhasil ditambahkan.' : 'Data berhasil diperbarui.');
+
+            if (formMode === 'create' && cetakStruk && selectedKomoditas && selectedProduksi) {
+                printStruk({
+                    namaKomoditas: selectedKomoditas.nama,
+                    satuanKomoditas: selectedKomoditas.satuan,
+                    kodeProduksi: selectedProduksi.kode_produksi,
+                    ukuran: selectedProduksi.ukuran,
+                    kualitas: selectedProduksi.kualitas,
+                    asalProduksi: selectedProduksi.asal_produksi?.nama ?? '-',
+                    hargaPersatuan: harga,
+                    jumlahTerjual: jumlah,
+                    totalHarga: total_harga,
+                    keterangan,
+                    tanggal: new Date(),
+                });
+            }
+
             onSubmitSuccess?.();
             onClose();
         } catch (error) {
@@ -201,6 +248,21 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
                         rows={4}
                     />
 
+                    {formMode === 'create' && (
+                        <>
+                            <div />
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={cetakStruk}
+                                    onChange={(e) => handleCetakStrukChange(e.target.checked)}
+                                    className="w-4 h-4 accent-green-600"
+                                />
+                                <span>Cetak Struk Pembelian</span>
+                            </label>
+                        </>
+                    )}
+
                     <div className="col-span-2 mt-4 flex justify-end space-x-2">
                         <button
                             type="button"
@@ -218,7 +280,6 @@ export default function InputPenjualanForm({ isOpen, onClose, formMode = "create
                         </button>
                     </div>
                 </form>
-
             </div>
         </Modal>
     );

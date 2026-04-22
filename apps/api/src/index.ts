@@ -12,6 +12,7 @@ import { transaksiBarangApp } from "./routes/transaksi_barang";
 import { produksiApp } from "./routes/produksi";
 import { penjualanApp } from "./routes/penjualan";
 import { asalProduksiApp } from "./routes/asal_produksi";
+import { preferenceApp } from "./routes/preference";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -57,6 +58,9 @@ api.route("/penjualan", penjualanApp);
 
 api.use("/asal-produksi/*", jwtCheckToken, isRole(["admin", "guru"]));
 api.route("/asal-produksi", asalProduksiApp);
+
+api.use("/user/preference/*", jwtCheckToken);
+api.route("/user/preference", preferenceApp);
 
 app.get("/", (c) => c.text("Hello Cloudflare Workers!"));
 app.route("/api", api);
