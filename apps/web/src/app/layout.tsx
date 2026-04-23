@@ -9,11 +9,15 @@ const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
+  display: "swap",
+  preload: true,
 });
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
+  display: "swap",
+  preload: false,
 });
 
 export const viewport: Viewport = {
@@ -22,7 +26,7 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: light)", color: "#015E23" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
 };
@@ -45,7 +49,10 @@ export const metadata: Metadata = {
     "TEFA",
     "SMK Sumatera Barat",
     "Pendidikan Kejuruan",
-    "Lima Kaum"
+    "Lima Kaum",
+    "Hidroponik",
+    "Melon Hidroponik",
+    "SMK Pertanian",
   ],
   authors: [{ name: "SMK Negeri 2 Batusangkar" }],
   creator: "SMK Negeri 2 Batusangkar",
@@ -66,7 +73,7 @@ export const metadata: Metadata = {
         url: "/image/fotosama.webp",
         width: 1200,
         height: 630,
-        alt: "SMK Negeri 2 Batusangkar",
+        alt: "SMK Negeri 2 Batusangkar - Foto Bersama Siswa dan Guru",
       },
     ],
   },
@@ -88,8 +95,9 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // google: "your-google-verification-code", // Tambahkan jika sudah punya Google Search Console
+    // google: "your-google-verification-code",
   },
+  category: "education",
 };
 
 export default function RootLayout({
@@ -97,33 +105,78 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const jsonLd = {
+  // JSON-LD Structured Data — EducationalOrganization
+  const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "EducationalOrganization",
+    "@id": "https://smk2batusangkar.tech/#organization",
     name: "SMK Negeri 2 Batusangkar",
-    alternateName: "SMKN 2 Batusangkar",
+    alternateName: ["SMKN 2 Batusangkar", "SMK 2 Batusangkar"],
     url: "https://smk2batusangkar.tech",
     logo: "https://smk2batusangkar.tech/image/fotosama.webp",
+    image: "https://smk2batusangkar.tech/image/fotosama.webp",
     description:
       "SMK Negeri 2 Batusangkar adalah sekolah menengah kejuruan negeri terakreditasi B dengan program keahlian Teknik Pengelasan, Teknik Kendaraan Ringan Otomotif, Agribisnis, dan Teaching Factory (TEFA).",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Jl. Raya Bukit Gombak",
       addressLocality: "Lima Kaum",
-      addressRegion: "Tanah Datar, Sumatera Barat",
+      addressRegion: "Sumatera Barat",
+      postalCode: "27211",
       addressCountry: "ID",
     },
-    sameAs: ["https://smk2batusangkar.tech"],
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: "-0.4830983",
+      longitude: "100.6144119",
+    },
+    telephone: "+6282269696489",
+    email: "smkpkbatusangkar@gmail.com",
+    foundingDate: "1990",
+    numberOfEmployees: {
+      "@type": "QuantitativeValue",
+      value: 27,
+    },
+    sameAs: [
+      "https://www.facebook.com/groups/159755090756204/",
+      "https://www.instagram.com/smkn2_batusangkar/",
+    ],
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: "Kabupaten Tanah Datar, Sumatera Barat",
+    },
+  };
+
+  // WebSite schema — triggers sitelinks search box in SERP
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": "https://smk2batusangkar.tech/#website",
+    url: "https://smk2batusangkar.tech",
+    name: "SMK Negeri 2 Batusangkar",
+    description: "Website resmi SMK Negeri 2 Batusangkar - Sekolah Menengah Kejuruan Unggulan di Tanah Datar",
+    publisher: {
+      "@id": "https://smk2batusangkar.tech/#organization",
+    },
+    inLanguage: "id-ID",
   };
 
   return (
     <html lang="id">
+      <head>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Organization structured data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        {/* WebSite structured data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <AuthGuard>{children}</AuthGuard>
         <Toaster/>
