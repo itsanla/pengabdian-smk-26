@@ -54,8 +54,11 @@ export const metadata: Metadata = {
     "Melon Hidroponik",
     "SMK Pertanian",
   ],
-  authors: [{ name: "SMK Negeri 2 Batusangkar" }],
-  creator: "SMK Negeri 2 Batusangkar",
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   publisher: "SMK Negeri 2 Batusangkar",
   metadataBase: new URL("https://smk2batusangkar.tech"),
   alternates: {
@@ -157,6 +160,24 @@ export default function RootLayout({
     description: "Website resmi SMK Negeri 2 Batusangkar - Sekolah Menengah Kejuruan Unggulan di Tanah Datar",
     publisher: {
       "@id": "https://smk2batusangkar.tech/#organization",
+    },
+    author: {
+      "@type": "Person",
+      "name": "Anla Harpanda",
+      "url": "https://anla.my.id",
+      "sameAs": [
+        "https://www.linkedin.com/in/anlaharpanda/",
+        "https://github.com/itsanla"
+      ]
+    },
+    developer: {
+      "@type": "Person",
+      "name": "Anla Harpanda",
+      "url": "https://anla.my.id",
+      "sameAs": [
+        "https://www.linkedin.com/in/anlaharpanda/",
+        "https://github.com/itsanla"
+      ]
     },
     inLanguage: "id-ID",
   };

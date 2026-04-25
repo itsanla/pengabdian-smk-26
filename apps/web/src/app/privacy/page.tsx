@@ -4,6 +4,11 @@ export const metadata: Metadata = {
   title: "Kebijakan Privasi",
   description:
     "Kebijakan Privasi resmi website SMK Negeri 2 Batusangkar tentang pengumpulan, penggunaan, dan perlindungan data pengguna, seo dikembangkan anla harpanda.",
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   alternates: {
     canonical: "/privacy",
   },

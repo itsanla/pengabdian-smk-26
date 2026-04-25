@@ -4,6 +4,11 @@ export const metadata: Metadata = {
   title: "Tentang Kami",
   description:
     "Profil singkat SMK Negeri 2 Batusangkar, visi misi, serta komitmen sekolah dalam pendidikan kejuruan dan Teaching Factory, seo dikembangkan anla harpanda.",
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   alternates: {
     canonical: "/about",
   },

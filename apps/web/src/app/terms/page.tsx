@@ -4,6 +4,11 @@ export const metadata: Metadata = {
   title: "Syarat & Ketentuan",
   description:
     "Syarat dan ketentuan penggunaan website resmi SMK Negeri 2 Batusangkar bagi seluruh pengunjung, seo dikembangkan anla harpanda.",
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   alternates: {
     canonical: "/terms",
   },

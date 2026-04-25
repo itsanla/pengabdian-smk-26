@@ -12,6 +12,11 @@ export const metadata: Metadata = {
     "hasil pertanian SMK",
     "komoditas premium",
   ],
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   alternates: {
     canonical: "/komoditas",
   },
@@ -28,6 +33,7 @@ export const metadata: Metadata = {
         alt: "Komoditas TEFA SMK Negeri 2 Batusangkar",
       },
     ],
+    authors: ["Anla Harpanda"],
   },
 };
 

@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   title: "Tim Pengembang",
   description:
     "Informasi tim pengembang website SMK Negeri 2 Batusangkar dari fase pengembangan awal hingga pengembangan lanjutan, seo dikembangkan anla harpanda.",
+  authors: [
+    { name: "SMK Negeri 2 Batusangkar" },
+    { name: "Anla Harpanda", url: "https://anla.my.id" }
+  ],
+  creator: "Anla Harpanda",
   alternates: {
     canonical: "/pengembang",
   },
