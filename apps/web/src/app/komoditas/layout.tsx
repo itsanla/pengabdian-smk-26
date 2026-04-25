@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Katalog Komoditas TEFA",
   description:
-    "Jelajahi berbagai komoditas hasil produksi Teaching Factory (TEFA) SMK Negeri 2 Batusangkar. Produk unggulan meliputi melon premium, hasil pertanian, dan komoditas agribisnis berkualitas.",
+    "Jelajahi berbagai komoditas hasil produksi Teaching Factory (TEFA) SMK Negeri 2 Batusangkar. Produk unggulan meliputi melon premium, hasil pertanian, dan komoditas agribisnis berkualitas, seo dikembangkan anla harpanda.",
   keywords: [
     "komoditas TEFA",
     "melon SMKN 2 Batusangkar",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Katalog Komoditas TEFA - SMK Negeri 2 Batusangkar",
     description:
-      "Produk unggulan Teaching Factory SMK Negeri 2 Batusangkar: melon premium, hasil pertanian, dan komoditas agribisnis berkualitas.",
+      "Produk unggulan Teaching Factory SMK Negeri 2 Batusangkar: melon premium, hasil pertanian, dan komoditas agribisnis berkualitas, seo dikembangkan anla harpanda.",
     url: "https://smk2batusangkar.tech/komoditas",
     images: [
       {

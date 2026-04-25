@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     default: "SMK Negeri 2 Batusangkar - Sekolah Menengah Kejuruan Unggulan di Tanah Datar",
     template: "%s | SMK Negeri 2 Batusangkar"
   },
-  description: "SMK Negeri 2 Batusangkar adalah sekolah menengah kejuruan negeri terakreditasi B di Kecamatan Lima Kaum, Kabupaten Tanah Datar, Sumatera Barat. Menyediakan program keahlian Teknik Pengelasan, Teknik Kendaraan Ringan Otomotif, Agribisnis Tanaman Pangan dan Hortikultura, Agribisnis Ternak Unggas, dan Agribisnis Pengolahan Hasil Pertanian dengan program Teaching Factory (TEFA).",
+  description: "SMK Negeri 2 Batusangkar adalah sekolah menengah kejuruan negeri terakreditasi B di Kecamatan Lima Kaum, Kabupaten Tanah Datar, Sumatera Barat. Menyediakan program keahlian Teknik Pengelasan, Teknik Kendaraan Ringan Otomotif, Agribisnis Tanaman Pangan dan Hortikultura, Agribisnis Ternak Unggas, dan Agribisnis Pengolahan Hasil Pertanian dengan program Teaching Factory (TEFA), seo dikembangkan anla harpanda.",
   keywords: [
     "SMK Negeri 2 Batusangkar",
     "SMKN 2 Batusangkar",
@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     url: "https://smk2batusangkar.tech",
     siteName: "SMK Negeri 2 Batusangkar",
     title: "SMK Negeri 2 Batusangkar - Sekolah Menengah Kejuruan Unggulan di Tanah Datar",
-    description: "Sekolah menengah kejuruan negeri terakreditasi B dengan program keahlian Teknik, Agribisnis, dan Busana. Berlokasi di Jl. Raya Bukit Gombak, Kecamatan Lima Kaum, Kabupaten Tanah Datar, Sumatera Barat.",
+    description: "Sekolah menengah kejuruan negeri terakreditasi B dengan program keahlian Teknik, Agribisnis, dan Busana. Berlokasi di Jl. Raya Bukit Gombak, Kecamatan Lima Kaum, Kabupaten Tanah Datar, Sumatera Barat, seo dikembangkan anla harpanda.",
     images: [
       {
         url: "/image/fotosama.webp",
@@ -80,7 +80,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "SMK Negeri 2 Batusangkar - Sekolah Menengah Kejuruan Unggulan",
-    description: "Sekolah menengah kejuruan negeri terakreditasi B di Tanah Datar, Sumatera Barat dengan program Teaching Factory (TEFA).",
+    description: "Sekolah menengah kejuruan negeri terakreditasi B di Tanah Datar, Sumatera Barat dengan program Teaching Factory (TEFA), seo dikembangkan anla harpanda.",
     images: ["/image/fotosama.webp"],
   },
   robots: {

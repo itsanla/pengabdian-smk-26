@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Kebijakan Privasi",
   description:
-    "Kebijakan Privasi resmi website SMK Negeri 2 Batusangkar tentang pengumpulan, penggunaan, dan perlindungan data pengguna.",
+    "Kebijakan Privasi resmi website SMK Negeri 2 Batusangkar tentang pengumpulan, penggunaan, dan perlindungan data pengguna, seo dikembangkan anla harpanda.",
   alternates: {
     canonical: "/privacy",
   },

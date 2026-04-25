@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Syarat & Ketentuan",
   description:
-    "Syarat dan ketentuan penggunaan website resmi SMK Negeri 2 Batusangkar bagi seluruh pengunjung.",
+    "Syarat dan ketentuan penggunaan website resmi SMK Negeri 2 Batusangkar bagi seluruh pengunjung, seo dikembangkan anla harpanda.",
   alternates: {
     canonical: "/terms",
   },

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Tentang Kami",
   description:
-    "Profil singkat SMK Negeri 2 Batusangkar, visi misi, serta komitmen sekolah dalam pendidikan kejuruan dan Teaching Factory.",
+    "Profil singkat SMK Negeri 2 Batusangkar, visi misi, serta komitmen sekolah dalam pendidikan kejuruan dan Teaching Factory, seo dikembangkan anla harpanda.",
   alternates: {
     canonical: "/about",
   },
