@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   description:
     "Portal siswa SMK Negeri 2 Batusangkar untuk akses informasi dan aktivitas belajar siswa yang telah login.",
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
 };
 
