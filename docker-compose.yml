@@ -1,7 +1,6 @@
 name: tefa-26
 
 services:
-  # ── API (Cloudflare Workers via wrangler dev --local) ───────────────────────
   api:
     build:
       context: ./apps/api
