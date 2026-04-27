@@ -129,34 +129,52 @@ export function printStruk(data: StrukData): void {
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Struk Pembelian</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: 'Courier New', Courier, monospace;
       font-size: 11px;
-      width: 58mm;
-      margin: 0 auto;
-      padding: 4mm;
       color: #000;
+      line-height: 1.4;
     }
-    .center { text-align: center; }
+    .center { text-align: center; word-wrap: break-word; }
     .bold { font-weight: bold; }
-    .divider { border-top: 1px dashed #000; margin: 4px 0; }
-    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-    .label { flex: 1; }
-    .value { text-align: right; }
-    .item-block { margin: 4px 0 6px; }
-    .item-title { font-weight: bold; margin: 2px 0 4px; font-size: 10px; }
-    .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; }
-    .footer { text-align: center; margin-top: 8px; font-size: 10px; }
+    .divider { border-top: 1px dashed #000; margin: 4px 0; page-break-after: avoid; }
+    .row { display: flex; justify-content: space-between; margin: 2px 0; word-wrap: break-word; page-break-inside: avoid; }
+    .label { flex: 1; word-wrap: break-word; overflow-wrap: break-word; }
+    .value { text-align: right; word-wrap: break-word; overflow-wrap: break-word; }
+    .item-block { margin: 4px 0 6px; page-break-inside: avoid; }
+    .item-title { font-weight: bold; margin: 2px 0 4px; font-size: 10px; page-break-after: avoid; }
+    .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; margin-top: 4px; page-break-inside: avoid; }
+    .footer { text-align: center; margin-top: 8px; font-size: 10px; page-break-before: avoid; }
     @media print {
       @page {
-        width: 58mm;
-        height: auto;
+        size: 58mm auto;
         margin: 0;
+        padding: 0;
       }
-      body { width: 58mm; margin: 0; padding: 2mm; }
+      html, body {
+        width: 58mm;
+        margin: 0;
+        padding: 2mm;
+        widows: 2;
+        orphans: 2;
+      }
+      body {
+        background: white;
+        color: black;
+      }
+      * {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
     }
   </style>
 </head>
@@ -205,7 +223,7 @@ export function printStruk(data: StrukData): void {
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
-  const w = window.open(url, "_blank", "width=320,height=600,scrollbars=no");
+  const w = window.open(url, "_blank", "width=280,height=600,resizable=yes,scrollbars=no");
 
   if (!w) {
     URL.revokeObjectURL(url);
