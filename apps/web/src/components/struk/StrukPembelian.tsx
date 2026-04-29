@@ -177,7 +177,7 @@ export function printStruk(data: StrukData): void {
 
   <div class="divider"></div>
 
-  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Ket: ${esc(data.keterangan)}</div><div class="divider"></div>` : ""}
+  ${data.keterangan ? `<div style="font-size:10px;margin:4px 0;">Keterangan :<br>${esc(data.keterangan)}</div><div class="divider"></div>` : ""}
 
   <div class="footer">Terima kasih atas pembelian Anda!</div>
   <div class="footer">-- SMKN 2 Batusangkar --</div>
