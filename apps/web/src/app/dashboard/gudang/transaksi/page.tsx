@@ -3,13 +3,28 @@ import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { useEffect, useState } from "react";
 import { DataTable } from "@/components/table/DataTable";
 import { Pencil, Trash2, Plus } from "lucide-react";
-import { apiRequest } from "@/services/api.service";
+import { apiRequest, fetchAllPages } from "@/services/api.service";
 import { TransaksiBarang, Barang } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function DashboardBarang() {
-  const [barangMasuk, setBarangMasuk] = useState<TransaksiBarang[]>([]);
-  const [barangKeluar, setBarangKeluar] = useState<TransaksiBarang[]>([]);
+  const {
+    data: barangMasuk,
+    meta: metaMasuk,
+    page: pageMasuk,
+    setPage: setPageMasuk,
+    loading: loadingMasuk,
+    refresh: refreshMasuk,
+  } = usePaginatedApi<TransaksiBarang>("/transaksi-barang?jenis=masuk");
+  const {
+    data: barangKeluar,
+    meta: metaKeluar,
+    page: pageKeluar,
+    setPage: setPageKeluar,
+    loading: loadingKeluar,
+    refresh: refreshKeluar,
+  } = usePaginatedApi<TransaksiBarang>("/transaksi-barang?jenis=keluar");
   const [barang, setBarang] = useState<Barang[]>([]);
   const [activeTab, setActiveTab] = useState<"masuk" | "keluar">("masuk");
   const [openCreate, setOpenCreate] = useState(false);
@@ -18,36 +33,20 @@ export default function DashboardBarang() {
   const [initialData, setInitialData] = useState<any>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
   const [isLoadingBarang, setIsLoadingBarang] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<any>({});
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const data = await apiRequest({ endpoint: "/transaksi-barang" });
-      setBarangMasuk([...(data.barang_masuk ?? [])].sort((a: TransaksiBarang, b: TransaksiBarang) => b.id - a.id));
-      setBarangKeluar([...(data.barang_keluar ?? [])].sort((a: TransaksiBarang, b: TransaksiBarang) => b.id - a.id));
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = activeTab === "masuk" ? loadingMasuk : loadingKeluar;
+  const pageSizeMasuk = metaMasuk?.pageSize ?? 10;
+  const pageSizeKeluar = metaKeluar?.pageSize ?? 10;
+  const activePage = activeTab === "masuk" ? pageMasuk : pageKeluar;
+  const activePageSize = activeTab === "masuk" ? pageSizeMasuk : pageSizeKeluar;
   
   const fetchBarang = async () => {
     try {
       setIsLoadingBarang(true);
-      const data = await apiRequest({ endpoint: "/barang" });
-      
-      if (data?.barang) {
-        setBarang(data.barang);
-      } else if (Array.isArray(data)) {
-        setBarang(data);
-      } else {
-        setBarang([]);
-      }
+      const data = await fetchAllPages<Barang>({ endpoint: "/barang" });
+      setBarang(data);
     } catch (error) {
       console.error("Error fetching barang:", error);
       setBarang([]);
@@ -78,7 +77,8 @@ export default function DashboardBarang() {
           endpoint: `/transaksi-barang/${deleteId}`,
           method: "DELETE",
         });
-        fetchData();
+        refreshMasuk(1);
+        refreshKeluar(1);
         setShowConfirm(false);
         setDeleteId(null);
       } catch (error) {
@@ -150,8 +150,11 @@ export default function DashboardBarang() {
         method: formMode === "create" ? "POST" : "PUT",
         data: apiData,
       });
-
-      fetchData();
+      if (transactionType === "masuk") {
+        refreshMasuk(1);
+      } else {
+        refreshKeluar(1);
+      }
       fetchBarang();
       setOpenCreate(false);
     } catch (error: any) {
@@ -194,7 +197,10 @@ export default function DashboardBarang() {
     {
       header: "#",
       accessorKey: "id",
-      cell: (item: TransaksiBarang) => getCurrentData().findIndex((p: any) => p.id === item.id) + 1,
+      cell: (item: TransaksiBarang) =>
+        (activePage - 1) * activePageSize +
+        getCurrentData().findIndex((p: any) => p.id === item.id) +
+        1,
     },
     {
       header: "Nama Barang",
@@ -244,7 +250,6 @@ export default function DashboardBarang() {
   useEffect(() => {
     const loadData = async () => {
       await fetchBarang();
-      await fetchData();
     };
     loadData();
   }, []);
@@ -314,6 +319,25 @@ export default function DashboardBarang() {
         title={activeTab === "masuk" ? "Data Barang Masuk" : "Data Barang Keluar"}
         emptyMessage={`Tidak ada data barang ${activeTab}.`}
         loading={loading}
+        serverPagination={
+          activeTab === "masuk" && metaMasuk
+            ? {
+                page: pageMasuk,
+                pageSize: metaMasuk.pageSize,
+                totalItems: metaMasuk.totalItems,
+                totalPages: metaMasuk.totalPages,
+                onPageChange: setPageMasuk,
+              }
+            : activeTab === "keluar" && metaKeluar
+              ? {
+                  page: pageKeluar,
+                  pageSize: metaKeluar.pageSize,
+                  totalItems: metaKeluar.totalItems,
+                  totalPages: metaKeluar.totalPages,
+                  onPageChange: setPageKeluar,
+                }
+              : undefined
+        }
       />
 
       {/* Modal Form */}

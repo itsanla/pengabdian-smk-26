@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, eq, gt, gte, lt, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { barangTable, transaksiBarangTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 
 export const transaksiBarangApp = new Hono<{
   Bindings: Env;
@@ -25,6 +26,7 @@ transaksiBarangApp.get("/", async (c) => {
     const tanggal = c.req.query("tanggal");
     const bulan = c.req.query("bulan");
     const tahun = c.req.query("tahun");
+    const jenis = c.req.query("jenis");
 
     const db = getDb(c.env);
 
@@ -79,6 +81,47 @@ transaksiBarangApp.get("/", async (c) => {
         eq(transaksiBarangTable.id_barang, barangTable.id),
       )
       .orderBy(asc(transaksiBarangTable.tanggal));
+
+    if (jenis === "masuk" || jenis === "keluar") {
+      const { page, pageSize, offset } = parsePagination(c.req.query());
+      const typeCond =
+        jenis === "masuk"
+          ? gt(transaksiBarangTable.masuk, 0)
+          : gt(transaksiBarangTable.keluar, 0);
+      const finalCond = whereCond ? and(whereCond, typeCond) : typeCond;
+
+      const totalRow = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(transaksiBarangTable)
+        .where(finalCond)
+        .get();
+      const totalItems = Number(totalRow?.count ?? 0);
+
+      const transaksi = await query
+        .where(finalCond)
+        .limit(pageSize)
+        .offset(offset)
+        .all();
+
+      const data = transaksi.map((t) => ({
+        id: t.id,
+        id_barang: t.id_barang,
+        nama: t.barangNama,
+        satuan: t.barangSatuan,
+        jumlah: jenis === "masuk" ? t.masuk : t.keluar,
+        masuk: t.masuk,
+        keluar: t.keluar,
+        keterangan: t.keterangan,
+        tanggal: dateToISO(t.tanggal),
+      }));
+
+      return c.json({
+        success: true,
+        message: `Berhasil mendapatkan data transaksi barang ${jenis}`,
+        data,
+        meta: buildPaginationMeta(page, pageSize, totalItems),
+      });
+    }
 
     const transaksi = whereCond
       ? await query.where(whereCond).all()

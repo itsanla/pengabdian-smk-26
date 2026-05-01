@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Loader2, ImageIcon, ArrowLeft, Search, X } from "lucide-react";
-import { apiRequest } from "@/services/api.service";
+import { fetchAllPages } from "@/services/api.service";
 
 // Define TypeScript interfaces for data structure
 interface KomoditasDetails {
@@ -56,9 +56,8 @@ const KomoditasPage = () => {
       try {
         setIsLoading(true);
         try {
-          const response = await apiRequest({
+          const response = await fetchAllPages({
             endpoint: "/komoditas",
-            method: "GET",
           });
           console.log("API response for TefaHybrid:", response);
 

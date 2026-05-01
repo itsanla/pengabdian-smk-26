@@ -4,16 +4,16 @@ import { apiRequest } from "@/services/api.service";
 import { DataTable } from "@/components/table/DataTable";
 import { Penjualan as PenjualanType } from "@/types";
 import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ChevronDown, ChevronUp, Printer, Download, Plus } from "lucide-react";
 import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
 import { printStruk } from "@/components/struk/StrukPembelian";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function Penjualan() {
-  const [penjualanList, setPenjualanList] = useState<PenjualanType[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [dataPenjualan, setDataPenjualan] = useState<PenjualanType[]>([]);
   const [expandedPenjualanId, setExpandedPenjualanId] = useState<number | null>(
@@ -26,25 +26,15 @@ export default function Penjualan() {
     number | null
   >(null);
 
-  const fetchDataPenjualan = async () => {
-    try {
-      setLoading(true);
-      const data = await apiRequest({
-        endpoint: "/penjualan",
-      });
-      console.log("DATA DARI BACKEND:", data);
-      setPenjualanList(Array.isArray(data) ? data : [data]);
-    } catch (err) {
-      console.error("Gagal ambil data Penjualan:", err);
-      toast.error("Gagal mengambil data penjualan.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDataPenjualan();
-  }, []);
+  const {
+    data: penjualanList,
+    meta,
+    page,
+    setPage,
+    loading: loadingList,
+    refresh,
+  } = usePaginatedApi<PenjualanType>("/penjualan");
+  const pageSize = meta?.pageSize ?? 10;
 
   const handleOpenExportModal = (data: PenjualanType[]) => {
     setDataPenjualan(data);
@@ -102,7 +92,11 @@ export default function Penjualan() {
       header: "#",
       accessorKey: "id" as keyof PenjualanType,
       cell: (item: PenjualanType) =>
-        (penjualanList.findIndex((p) => p.id === item.id) + 1).toString(),
+        (
+          (page - 1) * pageSize +
+          penjualanList.findIndex((p) => p.id === item.id) +
+          1
+        ).toString(),
     },
     {
       header: "Tanggal",
@@ -246,18 +240,29 @@ export default function Penjualan() {
           formMode="create"
           onSubmitSuccess={() => {
             setIsModalOpen(false);
-            fetchDataPenjualan();
+            refresh(1);
           }}
         />
       </div>
 
-      <DataTable
-        data={penjualanList}
-        columns={columns}
-        loading={loading}
-        title="Daftar Penjualan"
-        emptyMessage="Tidak ada data penjualan."
-      />
+            <DataTable
+              data={penjualanList}
+              columns={columns}
+              loading={loadingList || loading}
+              title="Daftar Penjualan"
+              emptyMessage="Tidak ada data penjualan."
+              serverPagination={
+                meta
+                  ? {
+                      page,
+                      pageSize: meta.pageSize,
+                      totalItems: meta.totalItems,
+                      totalPages: meta.totalPages,
+                      onPageChange: setPage,
+                    }
+                  : undefined
+              }
+            />
 
       {/* ── Detail Modal — dirender di luar tabel agar fixed positioning bekerja ── */}
       {expandedPenjualanId !== null && (

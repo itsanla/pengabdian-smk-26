@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { jenisTable, komoditasTable } from "../db/schema";
 import { Validator } from "../utils/validation";
@@ -10,6 +10,7 @@ import {
 } from "../utils/cloudinary";
 import { jwtCheckToken, isRole } from "../middlewares/auth";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 import type { Env, Variables } from "../types";
 
 export const komoditasApp = new Hono<{
@@ -35,6 +36,14 @@ async function getKomoditasById(
 komoditasApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(komoditasTable)
+      .where(eq(komoditasTable.isDeleted, 0))
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
     const rows = await db
       .select({
         id: komoditasTable.id,
@@ -51,6 +60,9 @@ komoditasApp.get("/", async (c) => {
       .from(komoditasTable)
       .leftJoin(jenisTable, eq(komoditasTable.id_jenis, jenisTable.id))
       .where(eq(komoditasTable.isDeleted, 0))
+      .orderBy(desc(komoditasTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
       .all();
 
     const data = rows.map((r) => convertTimestamps({
@@ -66,7 +78,12 @@ komoditasApp.get("/", async (c) => {
       updatedAt: r.updatedAt,
     }));
 
-    return c.json({ success: true, message: "Berhasil mengambil data.", data });
+    return c.json({
+      success: true,
+      message: "Berhasil mengambil data.",
+      data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
+    });
   } catch (error) {
     return handleAnyError(c, error);
   }

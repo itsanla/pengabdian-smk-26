@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import {
   asalProduksiTable,
@@ -12,6 +12,7 @@ import {
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import { convertTimestamps, unixToISO } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 import type { Env, Variables } from "../types";
 
 async function loadPenjualanSummary(
@@ -231,36 +232,55 @@ type PenjualanListProduksi = {
   kode_produksi: string;
 };
 
-async function loadPenjualanListRows(db: any) {
-  const [headers, itemRows, produksiRows] = await Promise.all([
-    db
-      .select({
-        id: penjualanTable.id,
-        total_harga: penjualanTable.total_harga,
-        keterangan: penjualanTable.keterangan,
-        createdAt: penjualanTable.createdAt,
-        updatedAt: penjualanTable.updatedAt,
-      })
-      .from(penjualanTable)
-      .orderBy(desc(penjualanTable.createdAt))
-      .all(),
-    db
-      .select({
-        id: penjualanItemTabel.id,
-        id_penjualan: penjualanItemTabel.id_penjualan,
-        id_produksi: penjualanItemTabel.id_produksi,
-      })
-      .from(penjualanItemTabel)
-      .orderBy(asc(penjualanItemTabel.id))
-      .all(),
-    db
-      .select({
-        id: produksiTable.id,
-        kode_produksi: produksiTable.kode_produksi,
-      })
-      .from(produksiTable)
-      .all(),
-  ]);
+async function loadPenjualanListRows(
+  db: any,
+  pageSize: number,
+  offset: number,
+) {
+  const headers = await db
+    .select({
+      id: penjualanTable.id,
+      total_harga: penjualanTable.total_harga,
+      keterangan: penjualanTable.keterangan,
+      createdAt: penjualanTable.createdAt,
+      updatedAt: penjualanTable.updatedAt,
+    })
+    .from(penjualanTable)
+    .orderBy(desc(penjualanTable.createdAt))
+    .limit(pageSize)
+    .offset(offset)
+    .all();
+
+  const headerIds = (headers as PenjualanListHeader[]).map((h) => h.id);
+  if (headerIds.length === 0) {
+    return [] as PenjualanListHeader[];
+  }
+
+  const itemRows = await db
+    .select({
+      id: penjualanItemTabel.id,
+      id_penjualan: penjualanItemTabel.id_penjualan,
+      id_produksi: penjualanItemTabel.id_produksi,
+    })
+    .from(penjualanItemTabel)
+    .where(inArray(penjualanItemTabel.id_penjualan, headerIds))
+    .orderBy(asc(penjualanItemTabel.id))
+    .all();
+
+  const produksiIds = Array.from(
+    new Set((itemRows as PenjualanListItem[]).map((row) => row.id_produksi)),
+  );
+
+  const produksiRows = produksiIds.length
+    ? await db
+        .select({
+          id: produksiTable.id,
+          kode_produksi: produksiTable.kode_produksi,
+        })
+        .from(produksiTable)
+        .where(inArray(produksiTable.id, produksiIds))
+        .all()
+    : [];
 
   const produksiMap = new Map<number, string>(
     (produksiRows as PenjualanListProduksi[]).map((row) => [
@@ -298,12 +318,21 @@ export const penjualanApp = new Hono<{
 penjualanApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
-    const data = await loadPenjualanListRows(db);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(penjualanTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
+    const data = await loadPenjualanListRows(db, pageSize, offset);
 
     return c.json({
       success: true,
       message: "Berhasil mendapatkan data penjualan",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronUp, ChevronDown, ChevronsUpDown, Search, Plus } from "lucide-react";
 
 interface DataTableProps<T> {
@@ -10,6 +10,13 @@ interface DataTableProps<T> {
     sortable?: boolean;
   }[];
   pageSize?: number;
+  serverPagination?: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  };
   emptyMessage?: string;
   loading?: boolean;
   _create?: () => void;
@@ -28,6 +35,7 @@ export function DataTable<T>({
   columns,
   _create,
   pageSize = 10,
+  serverPagination,
   loading,
   emptyMessage = "Tidak ada data ditemukan.",
   title = "Daftar Data",
@@ -38,13 +46,26 @@ export function DataTable<T>({
     key: null,
     direction: null,
   });
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const prevLoadingRef = useRef(loading);
+
+  useEffect(() => {
+    // Only animate when loading changes from true to false
+    if (prevLoadingRef.current === true && loading === false) {
+      setShouldAnimate(true);
+      const timer = setTimeout(() => setShouldAnimate(false), 500);
+      return () => clearTimeout(timer);
+    }
+    prevLoadingRef.current = loading;
+  }, [loading]);
 
   const handleSort = (key: keyof T) => {
     let direction: SortDirection = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") direction = "desc";
     else if (sortConfig.key === key && sortConfig.direction === "desc") direction = null;
     setSortConfig({ key, direction });
-    setCurrentPage(1);
+    if (serverPagination) serverPagination.onPageChange(1);
+    else setCurrentPage(1);
   };
 
   const getSortIcon = (columnKey: keyof T) => {
@@ -81,9 +102,18 @@ export function DataTable<T>({
     return 0;
   });
 
-  const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
-  const totalItems = sortedData.length;
-  const pageData = sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const effectivePage = serverPagination?.page ?? currentPage;
+  const effectivePageSize = serverPagination?.pageSize ?? pageSize;
+  const totalPages = serverPagination
+    ? serverPagination.totalPages
+    : Math.max(1, Math.ceil(sortedData.length / effectivePageSize));
+  const totalItems = serverPagination ? serverPagination.totalItems : sortedData.length;
+  const pageData = serverPagination
+    ? sortedData
+    : sortedData.slice(
+        (effectivePage - 1) * effectivePageSize,
+        effectivePage * effectivePageSize,
+      );
 
   return (
     <>
@@ -115,7 +145,8 @@ export function DataTable<T>({
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
-              setCurrentPage(1);
+              if (serverPagination) serverPagination.onPageChange(1);
+              else setCurrentPage(1);
             }}
             placeholder="Cari..."
             style={{
@@ -272,7 +303,7 @@ export function DataTable<T>({
                     className="dt-row"
                     style={{
                       borderBottom: "1px solid #F9FAFB",
-                      animation: `dt-rowIn .3s ${rowIdx * 0.03}s ease both`,
+                      animation: shouldAnimate ? `dt-rowIn .3s ${rowIdx * 0.03}s ease both` : 'none',
                     }}
                   >
                     {columns.map((col, colIdx) => (
@@ -309,27 +340,43 @@ export function DataTable<T>({
         >
           <span style={{ fontSize: 13, color: "#9CA3AF" }}>
             Menampilkan{" "}
-            {totalItems === 0 ? 0 : Math.min((currentPage - 1) * pageSize + 1, totalItems)}{" "}
-            – {Math.min(currentPage * pageSize, totalItems)} dari {totalItems}
+            {totalItems === 0
+              ? 0
+              : Math.min((effectivePage - 1) * effectivePageSize + 1, totalItems)}{" "}
+            – {Math.min(effectivePage * effectivePageSize, totalItems)} dari {totalItems}
           </span>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => {
+                if (serverPagination) {
+                  serverPagination.onPageChange(Math.max(effectivePage - 1, 1));
+                } else {
+                  setCurrentPage((p) => Math.max(p - 1, 1));
+                }
+              }}
+              disabled={effectivePage === 1}
               className="dt-page-btn"
-              style={{ opacity: currentPage === 1 ? 0.45 : 1 }}
+              style={{ opacity: effectivePage === 1 ? 0.45 : 1 }}
               type="button"
             >
               Prev
             </button>
             <span style={{ fontSize: 13, color: "#6B7280", fontWeight: 600 }}>
-              {currentPage} / {totalPages}
+              {effectivePage} / {totalPages}
             </span>
             <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage >= totalPages}
+              onClick={() => {
+                if (serverPagination) {
+                  serverPagination.onPageChange(
+                    Math.min(effectivePage + 1, totalPages),
+                  );
+                } else {
+                  setCurrentPage((p) => Math.min(p + 1, totalPages));
+                }
+              }}
+              disabled={effectivePage >= totalPages}
               className="dt-page-btn"
-              style={{ opacity: currentPage >= totalPages ? 0.45 : 1 }}
+              style={{ opacity: effectivePage >= totalPages ? 0.45 : 1 }}
               type="button"
             >
               Next

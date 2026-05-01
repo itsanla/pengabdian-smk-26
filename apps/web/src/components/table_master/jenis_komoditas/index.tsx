@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PenBox, Trash2 } from "lucide-react";
 import { apiRequest } from "@/services/api.service";
 import { DataTable } from "@/components/table/DataTable";
 import { Jenis as JenisType } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 type Props = {
   onEdit: (jenis: JenisType) => void;
@@ -13,31 +14,17 @@ type Props = {
 };
 
 export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
-  const [jenisList, setJenisList] = useState<JenisType[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-
-  // Menampilkan data
-  const fetchDataJenis = async () => {
-    try {
-      setLoading(true);
-      const data = await apiRequest({
-        endpoint: "/jenis"
-      });
-      const arr = (Array.isArray(data) ? data : [data]) as JenisType[];
-      setJenisList([...arr].sort((a, b) => b.id - a.id));
-    } catch (err) {
-      console.error("Gagal ambil data jenis:", err);
-      toast.error("Gagal mengambil data jenis komoditas.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDataJenis();
-  }, [reloadTrigger]);
+  const {
+    data: jenisList,
+    meta,
+    page,
+    setPage,
+    loading,
+    refresh,
+  } = usePaginatedApi<JenisType>("/jenis", [reloadTrigger]);
+  const pageSize = meta?.pageSize ?? 10;
 
   const handleDeleteClick = (id: number) => {
     setDeleteId(id);
@@ -53,7 +40,7 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
           method: "DELETE"
         });
         toast.success("Data berhasil dihapus.");
-        fetchDataJenis();
+        refresh(1);
       } catch (error) {
         console.error("Gagal hapus data jenis", error);
         toast.error("Gagal menghapus data.")
@@ -68,7 +55,11 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
     {
       header: "#",
       accessorKey: "id" as keyof JenisType,
-      cell: (item: JenisType) => (jenisList.findIndex((p) => p.id === item.id) + 1).toString(),
+      cell: (item: JenisType) => (
+        (page - 1) * pageSize +
+        jenisList.findIndex((p) => p.id === item.id) +
+        1
+      ).toString(),
     },
     { header: "Nama", accessorKey: "name" as keyof JenisType },
     {
@@ -101,6 +92,17 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
         loading={loading}
         title="Daftar Jenis Komoditas"
         emptyMessage="Tidak ada data jenis komoditas."
+        serverPagination={
+          meta
+            ? {
+                page,
+                pageSize: meta.pageSize,
+                totalItems: meta.totalItems,
+                totalPages: meta.totalPages,
+                onPageChange: setPage,
+              }
+            : undefined
+        }
       />
       {showConfirm && (
         <ConfirmButton

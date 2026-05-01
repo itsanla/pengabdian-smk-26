@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { apiRequest } from '@/services/api.service';
+import { apiRequest, fetchAllPages } from '@/services/api.service';
 import { toast } from 'sonner';
 
 interface ModalProps {
@@ -112,10 +112,10 @@ export default function InputKomoditasForm({
 
     const fetchDataJenis = async () => {
         try {
-            const data = await apiRequest({
+            const data = await fetchAllPages({
                 endpoint: "/jenis",
             });
-            setJenisList(Array.isArray(data) ? data : [data]);
+            setJenisList(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error("Gagal ambil data jenis:", err);
             toast.error("Gagal mengambil data jenis");

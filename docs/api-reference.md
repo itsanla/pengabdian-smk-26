@@ -3,6 +3,27 @@
 **Base URL:** `https://<worker>.workers.dev/api`  
 **Local:** `http://localhost:8787/api`
 
+## Pagination
+
+Semua endpoint list mendukung query:
+
+```
+?page=1&pageSize=10
+```
+
+Response list akan menyertakan `meta`:
+
+```json
+{
+  "meta": {
+    "page": 1,
+    "pageSize": 10,
+    "totalItems": 120,
+    "totalPages": 12
+  }
+}
+```
+
 Semua endpoint (kecuali `/auth` dan `GET /komoditas`) memerlukan header:
 ```
 Authorization: Bearer <jwt_token>

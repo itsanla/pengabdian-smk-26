@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 const SIDEBAR_BG = "#1A4731";
 const SIDEBAR_W = 240;
@@ -225,23 +226,18 @@ export default function DashboardSidebar({
             transition: "padding .28s",
           }}
         >
-          <div
+          <Image
+            src="/icon.webp"
+            alt="TEFA 26 Logo"
+            width={36}
+            height={36}
             style={{
               width: 36,
               height: 36,
               borderRadius: 10,
               flexShrink: 0,
-              background: "#FACC15",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: 17,
-              color: SIDEBAR_BG,
             }}
-          >
-            T
-          </div>
+          />
           {open && (
             <div style={{ overflow: "hidden", whiteSpace: "nowrap" }}>
               <div

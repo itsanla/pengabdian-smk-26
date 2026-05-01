@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { roleEnum, usersTable } from "../db/schema";
 import { hashPassword } from "../utils/password";
@@ -7,6 +7,7 @@ import { Validator } from "../utils/validation";
 import { handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
 import { convertTimestamps, convertTimestampsArray } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 
 
 export const usersApp = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -14,11 +15,26 @@ export const usersApp = new Hono<{ Bindings: Env; Variables: Variables }>();
 usersApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
-    const users = await db.select().from(usersTable).all();
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(usersTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
+    const users = await db
+      .select()
+      .from(usersTable)
+      .orderBy(desc(usersTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
+      .all();
     return c.json({
       success: true,
       message: "Mendapatkan data user.",
       data: convertTimestampsArray(users),
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);

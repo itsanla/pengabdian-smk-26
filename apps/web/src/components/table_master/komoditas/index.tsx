@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { InfoIcon, PenBox, Trash2 } from "lucide-react";
 import { apiRequest } from "@/services/api.service";
 import InputKomoditasForm from "./input";
@@ -8,38 +8,26 @@ import { DataTable } from "@/components/table/DataTable";
 import { Komoditas as KomoditasType } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function Komoditas() {
-    const [komoditasList, setKomoditasList] = useState<KomoditasType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUpdateOpen, setIsUpdateOpen] = useState(false);
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const [selectedKomoditas, setSelectedKomoditas] = useState<KomoditasType | null>(null);
     const [komoditasYgDipilih, setKomoditasYgDipilih] = useState<KomoditasType | null>(null);
-    const [loading, setLoading] = useState(true);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
+    const {
+        data: komoditasList,
+        meta,
+        page,
+        setPage,
+        loading,
+        refresh,
+    } = usePaginatedApi<KomoditasType>("/komoditas");
 
-    const fetchDataKomoditas = async () => {
-        try {
-            setLoading(true);
-            const data = await apiRequest({
-                endpoint: "/komoditas",
-            });
-            console.log("DATA DARI BACKEND:", data);
-            const arr = (Array.isArray(data) ? data : [data]) as KomoditasType[];
-            setKomoditasList([...arr].sort((a, b) => b.id - a.id));
-        } catch (err) {
-            console.error("Gagal ambil data Komoditas:", err);
-            toast.error("Gagal mengambil data komoditas.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDataKomoditas();
-    }, []);
+    const pageSize = meta?.pageSize ?? 10;
 
     // update modal
     const handleOpenUpdateModal = (data: KomoditasType) => {
@@ -60,7 +48,7 @@ export default function Komoditas() {
                     method: "DELETE",
                 });
                 toast.success("Data berhasil dihapus.");
-                fetchDataKomoditas();
+                refresh(1);
             } catch (error) {
                 console.error("Gagal hapus data Komoditas", error);
                 toast.error("Gagal menghapus data.")
@@ -75,7 +63,11 @@ export default function Komoditas() {
         {
             header: "#",
             accessorKey: "id" as keyof KomoditasType,
-            cell: (item: KomoditasType) => (komoditasList.findIndex((k) => k.id === item.id) + 1).toString(),
+            cell: (item: KomoditasType) => (
+                (page - 1) * pageSize +
+                komoditasList.findIndex((k) => k.id === item.id) +
+                1
+            ).toString(),
         },
         { header: "Jenis Komoditas", accessorKey: "jenis" as keyof KomoditasType, cell: (item: KomoditasType) => item.jenis.name },
         { header: "Nama", accessorKey: "nama" as keyof KomoditasType },
@@ -123,7 +115,11 @@ export default function Komoditas() {
                     type="button">
                     + Buat Komoditas Baru
                 </button>
-                <InputKomoditasForm isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmitSuccess={fetchDataKomoditas} />
+                <InputKomoditasForm
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmitSuccess={() => refresh(1)}
+                />
             </div>
             <DataTable
                 data={komoditasList}
@@ -131,6 +127,17 @@ export default function Komoditas() {
                 loading={loading}
                 title="Daftar Komoditas"
                 emptyMessage="Tidak ada data komoditas."
+                serverPagination={
+                    meta
+                        ? {
+                            page,
+                            pageSize: meta.pageSize,
+                            totalItems: meta.totalItems,
+                            totalPages: meta.totalPages,
+                            onPageChange: setPage,
+                        }
+                        : undefined
+                }
             />
             <InfoKomoditasForm
                 isOpen={isInfoOpen}
@@ -144,7 +151,7 @@ export default function Komoditas() {
                 initialData={komoditasYgDipilih}
                 onSubmitSuccess={() => {
                     setIsUpdateOpen(false);
-                    fetchDataKomoditas();
+                    refresh(1);
                 }}
             />
             {showConfirm && (

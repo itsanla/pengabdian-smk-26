@@ -1,11 +1,12 @@
 import { Hono } from "hono";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { barangTable, transaksiBarangTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 
 export const barangApp = new Hono<{
   Bindings: Env;
@@ -15,7 +16,21 @@ export const barangApp = new Hono<{
 barangApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
-    const barangs = await db.select().from(barangTable).all();
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(barangTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
+    const barangs = await db
+      .select()
+      .from(barangTable)
+      .orderBy(desc(barangTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
+      .all();
 
     const data = await Promise.all(
       barangs.map(async (b) => {
@@ -37,6 +52,7 @@ barangApp.get("/", async (c) => {
       success: true,
       message: "Berhasil mendapatkan data barang",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);

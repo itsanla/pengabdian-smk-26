@@ -1,41 +1,29 @@
 "use client";
-import { apiRequest } from "@/services/api.service";
 import InputProduksiForm from "./input";
 import { DataTable } from "@/components/table/DataTable";
 import { Produksi as ProduksiType } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PenBox, Trash2 } from "lucide-react";
+import { apiRequest } from "@/services/api.service";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function Produksi() {
-    const [produksiList, setProduksiList] = useState<ProduksiType[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isUpdateOpen, setIsUpdateOpen] = useState(false);
     const [produksiYgDipilih, setProduksiYgDipilih] = useState<ProduksiType | null>(null);
-    const [loading, setLoading] = useState(true);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
-
-    const fetchDataProduksi = async () => {
-        try {
-            setLoading(true);
-            const data = await apiRequest({
-                endpoint: "/produksi",
-            });
-            console.log("DATA DARI BACKEND:", data);
-            setProduksiList(Array.isArray(data) ? data : [data]);
-        } catch (err) {
-            console.error("Gagal ambil data Produksi:", err);
-            toast.error("Gagal mengambil data produksi.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDataProduksi();
-    }, []);
+    const {
+        data: produksiList,
+        meta,
+        page,
+        setPage,
+        loading,
+        refresh,
+    } = usePaginatedApi<ProduksiType>("/produksi");
+    const pageSize = meta?.pageSize ?? 10;
 
     const handleOpenUpdateModal = (data: ProduksiType) => {
         setProduksiYgDipilih(data);
@@ -55,7 +43,7 @@ export default function Produksi() {
                     method: "DELETE",
                 });
                 toast.success("Data berhasil dihapus.");
-                fetchDataProduksi();
+                refresh(1);
             } catch (error) {
                 console.error("Gagal hapus data Produksi", error);
                 toast.error("Gagal menghapus data.")
@@ -70,7 +58,11 @@ export default function Produksi() {
         {
             header: "#",
             accessorKey: "id" as keyof ProduksiType,
-            cell: (item: ProduksiType) => (produksiList.findIndex((p) => p.id === item.id) + 1).toString(),
+            cell: (item: ProduksiType) => (
+                (page - 1) * pageSize +
+                produksiList.findIndex((p) => p.id === item.id) +
+                1
+            ).toString(),
         },
         { header: "Kode Produksi", accessorKey: "kode_produksi" as keyof ProduksiType },
         { header: "Asal Produksi", accessorKey: "asal_produksi" as keyof ProduksiType, cell: (item: ProduksiType) => item.asal_produksi.nama },
@@ -129,7 +121,7 @@ export default function Produksi() {
                     initialData={null}
                     onSubmitSuccess={() => {
                         setIsModalOpen(false);
-                        fetchDataProduksi();
+                        refresh(1);
                     }}
                 />
             </div>
@@ -139,6 +131,17 @@ export default function Produksi() {
                 loading={loading}
                 title="Daftar Produksi"
                 emptyMessage="Tidak ada data produksi."
+                serverPagination={
+                    meta
+                        ? {
+                            page,
+                            pageSize: meta.pageSize,
+                            totalItems: meta.totalItems,
+                            totalPages: meta.totalPages,
+                            onPageChange: setPage,
+                        }
+                        : undefined
+                }
             />
             <InputProduksiForm
                 isOpen={isUpdateOpen}
@@ -147,7 +150,7 @@ export default function Produksi() {
                 initialData={produksiYgDipilih}
                 onSubmitSuccess={() => {
                     setIsUpdateOpen(false);
-                    fetchDataProduksi();
+                    refresh(1);
                 }}
             />
             {showConfirm && (

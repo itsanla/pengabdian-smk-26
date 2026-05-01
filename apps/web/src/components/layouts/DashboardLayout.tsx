@@ -29,6 +29,7 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
         background: "#1A4731",
         color: "#111827",
         overflow: "hidden",
+        position: "relative",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif',
       }}
@@ -52,6 +53,9 @@ export default function DashboardLayout({ children, title, role }: DashboardLayo
           overflowX: "hidden",
           display: "flex",
           flexDirection: "column",
+          position: "relative",
+          isolation: "isolate",
+          willChange: "border-radius",
         }}
       >
         <div

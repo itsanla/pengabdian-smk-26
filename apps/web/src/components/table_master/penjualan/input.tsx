@@ -1,7 +1,7 @@
 "use client";
 
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { apiRequest } from "@/services/api.service";
+import { apiRequest, fetchAllPages } from "@/services/api.service";
 import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
 import { printStruk } from "@/components/struk/StrukPembelian";
@@ -141,8 +141,8 @@ export default function InputPenjualanForm({
 
   const fetchDataKomodity = async () => {
     try {
-      const data = await apiRequest({ endpoint: "/komoditas" });
-      setKomodityList(Array.isArray(data) ? data : [data]);
+      const data = await fetchAllPages({ endpoint: "/komoditas" });
+      setKomodityList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching komoditas:", error);
       toast.error("Gagal mengambil data komoditas.");
@@ -151,8 +151,8 @@ export default function InputPenjualanForm({
 
   const fetchDataProduksi = async () => {
     try {
-      const data = await apiRequest({ endpoint: "/produksi" });
-      setProduksiList(Array.isArray(data) ? data : [data]);
+      const data = await fetchAllPages({ endpoint: "/produksi" });
+      setProduksiList(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching produksi:", error);
       toast.error("Gagal mengambil data produksi.");

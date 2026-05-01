@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   ChevronDown,
   ChevronUp,
@@ -10,6 +11,7 @@ import {
   Package,
   Plus,
   Trash2,
+  LogOut,
 } from "lucide-react";
 import { Komoditas, Penjualan, Produksi } from "@/types";
 import { DataTable } from "@/components/table/DataTable";
@@ -37,6 +39,7 @@ const createEmptyItem = (): PenjualanFormItem => ({
 });
 
 export default function KasirPage() {
+  const router = useRouter();
   const username =
     typeof window != "undefined"
       ? (document.cookie
@@ -44,6 +47,13 @@ export default function KasirPage() {
           .find((row) => row.startsWith("username="))
           ?.split("=")[1] ?? "User")
       : null;
+
+  const handleLogout = () => {
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "username=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    router.push("/login");
+  };
 
   const [produksi, setProduksi] = useState<Produksi[]>([]);
   const [penjualan, setPenjualan] = useState<Penjualan[]>([]);
@@ -415,7 +425,7 @@ export default function KasirPage() {
               visibleCodes.map((kode) => (
                 <span
                   key={kode}
-                  className="rounded bg-blue-100 px-2 py-1 text-xs font-mono text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  className="rounded bg-green-100 px-2 py-1 text-xs font-mono text-green-800 dark:bg-green-900 dark:text-green-200"
                 >
                   {kode}
                 </span>
@@ -471,7 +481,7 @@ export default function KasirPage() {
             )}
           </button>
           <button
-            className="bg-blue-600 px-4 py-2 rounded text-white text-sm"
+            className="bg-green-600 px-4 py-2 rounded text-white text-sm hover:bg-green-700"
             onClick={() => handlePrintClick(item.id)}
             type="button"
           >
@@ -482,7 +492,7 @@ export default function KasirPage() {
             <div className="absolute right-0 top-full z-20 mt-2 w-[28rem] rounded-xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-700 dark:bg-gray-900">
               {loadingPenjualanDetailId === item.id ? (
                 <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-500 border-t-transparent" />
                   Memuat item penjualan...
                 </div>
               ) : (
@@ -523,7 +533,7 @@ export default function KasirPage() {
                                 {detailItem.produksi?.kualitas ?? "-"}
                               </p>
                             </div>
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-200">
                               {detailItem.jumlah_terjual} pcs
                             </span>
                           </div>
@@ -561,32 +571,56 @@ export default function KasirPage() {
   ];
 
   return (
-    <div className="min-h-screen text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-yellow-50/30">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b px-5 pt-4">
-        <DashboardHeader role={username} title="Kasir" />
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <DashboardHeader role={username} title="Point of Sale" />
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+            >
+              <LogOut size={18} />
+              Logout
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="p-4 space-y-4">
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
         {/* Error Alert */}
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-              <AlertCircle size={20} />
-              <span className="font-medium">Error:</span>
-              <span>{error}</span>
+          <div className="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 shadow-md">
+            <div className="flex items-center gap-3 text-red-800">
+              <div className="bg-red-100 p-2 rounded-lg">
+                <AlertCircle size={20} />
+              </div>
+              <div>
+                <span className="font-semibold">Error:</span>
+                <span className="ml-2">{error}</span>
+              </div>
             </div>
           </div>
         )}
 
         {/* Transaction Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-4">
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <Receipt size={20} />
-            Transaksi Baru
-          </h2>
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          <div className="bg-green-600 p-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                <Receipt size={24} className="text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">Transaksi Baru</h2>
+                <p className="text-green-100 text-sm">Buat transaksi penjualan baru</p>
+              </div>
+            </div>
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="p-6">
+
+          <form onSubmit={handleSubmit} className="space-y-6">
             {formItems.map((item, index) => {
               const selectedProduksi = produksi.find(
                 (p) => p.id === item.id_produksi,
@@ -596,17 +630,22 @@ export default function KasirPage() {
               return (
                 <div
                   key={`item-${index}`}
-                  className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4"
+                  className="border-2 border-gray-200 rounded-xl p-5 space-y-4 bg-gradient-to-br from-white to-gray-50 hover:shadow-md transition-shadow"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-gray-800 dark:text-gray-200">
-                      Item {index + 1}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <div className="bg-gradient-to-br from-green-500 to-green-600 text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <h3 className="font-semibold text-gray-800">
+                        Item Produk
+                      </h3>
+                    </div>
                     <button
                       type="button"
                       onClick={() => removeItem(index)}
                       disabled={formItems.length === 1}
-                      className="inline-flex items-center gap-1 text-sm text-red-600 disabled:text-gray-400"
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:text-gray-400 disabled:hover:bg-transparent"
                     >
                       <Trash2 size={16} />
                       Hapus
@@ -615,7 +654,7 @@ export default function KasirPage() {
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Produk *
                       </label>
                       <select
@@ -623,10 +662,10 @@ export default function KasirPage() {
                         onChange={(e) =>
                           handleItemChange(index, "id_komodity", e.target.value)
                         }
-                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                        className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
                           formErrors[`${index}.id_komodity`]
-                            ? "border-red-500 dark:border-red-400"
-                            : "border-gray-300 dark:border-gray-600"
+                            ? "border-red-500"
+                            : "border-gray-300"
                         }`}
                       >
                         <option value="">Pilih Produk</option>
@@ -643,15 +682,15 @@ export default function KasirPage() {
                         })}
                       </select>
                       {formErrors[`${index}.id_komodity`] && (
-                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                          <AlertCircle size={12} />
+                        <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
+                          <AlertCircle size={14} />
                           <span>{formErrors[`${index}.id_komodity`]}</span>
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Kode Produksi *
                       </label>
                       <select
@@ -660,10 +699,10 @@ export default function KasirPage() {
                         onChange={(e) =>
                           handleItemChange(index, "id_produksi", e.target.value)
                         }
-                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                        className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
                           formErrors[`${index}.id_produksi`]
-                            ? "border-red-500 dark:border-red-400"
-                            : "border-gray-300 dark:border-gray-600"
+                            ? "border-red-500"
+                            : "border-gray-300"
                         } ${!item.id_komodity ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
                         <option value="">
@@ -679,8 +718,8 @@ export default function KasirPage() {
                         ))}
                       </select>
                       {formErrors[`${index}.id_produksi`] && (
-                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                          <AlertCircle size={12} />
+                        <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
+                          <AlertCircle size={14} />
                           <span>{formErrors[`${index}.id_produksi`]}</span>
                         </div>
                       )}
@@ -689,7 +728,7 @@ export default function KasirPage() {
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Jumlah
                         {selectedProduksi
                           ? ` (${selectedProduksi.komoditas?.satuan})`
@@ -709,10 +748,10 @@ export default function KasirPage() {
                         placeholder="0"
                         min="1"
                         max={selectedProduksi?.jumlah || undefined}
-                        className={`w-full p-3 border rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${
+                        className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
                           formErrors[`${index}.jumlah_terjual`]
-                            ? "border-red-500 dark:border-red-400"
-                            : "border-gray-300 dark:border-gray-600"
+                            ? "border-red-500"
+                            : "border-gray-300"
                         }`}
                       />
                       {selectedProduksi && (
@@ -722,15 +761,15 @@ export default function KasirPage() {
                         </p>
                       )}
                       {formErrors[`${index}.jumlah_terjual`] && (
-                        <div className="flex items-center gap-1 mt-1 text-red-500 text-xs">
-                          <AlertCircle size={12} />
+                        <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
+                          <AlertCircle size={14} />
                           <span>{formErrors[`${index}.jumlah_terjual`]}</span>
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Keterangan
                       </label>
                       <Input
@@ -740,110 +779,122 @@ export default function KasirPage() {
                           handleItemChange(index, "keterangan", e.target.value)
                         }
                         placeholder="Keterangan tambahan (opsional)"
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
+                        className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-gray-900 focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Total Harga
                       </label>
-                      <Input
-                        type="text"
-                        value={
-                          item.total_harga
-                            ? `Rp${new Intl.NumberFormat("id-ID").format(item.total_harga)}`
-                            : ""
-                        }
-                        placeholder="0"
-                        className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-                        disabled
-                      />
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          value={
+                            item.total_harga
+                              ? `Rp${new Intl.NumberFormat("id-ID").format(item.total_harga)}`
+                              : ""
+                          }
+                          placeholder="0"
+                          className="w-full p-3 border-2 border-gray-300 rounded-xl bg-gradient-to-br from-yellow-50 to-yellow-100 text-gray-900 font-bold text-lg"
+                          disabled
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               );
             })}
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4 pt-4 border-t-2 border-gray-200">
               <button
                 type="button"
                 onClick={addItem}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl border-2 border-green-500 text-green-700 bg-green-50 hover:bg-green-100 font-semibold transition-all hover:shadow-md"
               >
-                <Plus size={16} />
+                <Plus size={18} />
                 Tambah Produk
               </button>
 
-              <div className="text-right">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-right bg-gradient-to-br from-yellow-50 to-yellow-100 px-6 py-3 rounded-xl border-2 border-yellow-300">
+                <p className="text-sm font-medium text-yellow-800">
                   Total Semua Produk
                 </p>
-                <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                <p className="text-2xl font-bold text-yellow-900">
                   Rp{new Intl.NumberFormat("id-ID").format(grandTotal)}
                 </p>
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <label className="flex items-center gap-3 cursor-pointer text-sm font-medium text-gray-700 bg-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:bg-gray-100 transition-colors">
               <input
                 type="checkbox"
                 checked={cetakStruk}
                 onChange={(e) => handleCetakStrukChange(e.target.checked)}
-                className="w-4 h-4 accent-blue-600"
+                className="w-5 h-5 accent-green-600 rounded"
               />
+              <Receipt size={18} className="text-green-600" />
               Cetak Struk Pembelian
             </label>
 
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
             >
               {isLoading ? (
                 <>
-                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span>
-                  Memproses...
+                  <span className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></span>
+                  Memproses Transaksi...
                 </>
               ) : (
                 <>
-                  <ShoppingCart size={18} />
+                  <ShoppingCart size={22} />
                   Simpan Transaksi
                 </>
               )}
             </Button>
           </form>
+          </div>
         </div>
 
         {/* Collapsible Sales Data */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
           <button
             onClick={() => setShowPenjualan(!showPenjualan)}
-            className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg"
+            className="w-full p-6 flex items-center justify-between text-left hover:bg-gradient-to-r hover:from-green-50 hover:to-yellow-50 transition-all rounded-2xl"
           >
-            <div className="flex items-center gap-2">
-              <Receipt size={20} className="text-blue-600" />
-              <span className="font-medium">Riwayat Penjualan</span>
-              <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs">
-                {penjualan.length} transaksi
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl">
+                <Receipt size={22} className="text-white" />
+              </div>
+              <div>
+                <span className="font-bold text-lg text-gray-800">Riwayat Penjualan</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="px-3 py-1 bg-gradient-to-r from-green-100 to-yellow-100 text-green-800 rounded-full text-xs font-semibold">
+                    {penjualan.length} transaksi
+                  </span>
+                </div>
+              </div>
             </div>
-            {showPenjualan ? (
-              <ChevronUp size={20} />
-            ) : (
-              <ChevronDown size={20} />
-            )}
+            <div className="bg-gray-100 p-2 rounded-lg">
+              {showPenjualan ? (
+                <ChevronUp size={24} className="text-gray-600" />
+              ) : (
+                <ChevronDown size={24} className="text-gray-600" />
+              )}
+            </div>
           </button>
 
           {showPenjualan && (
-            <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-600">
+            <div className="px-6 pb-6 border-t-2 border-gray-200">
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-500">Memuat data...</p>
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-600 border-t-transparent mx-auto"></div>
+                  <p className="mt-4 text-gray-600 font-medium">Memuat data...</p>
                 </div>
               ) : (
-                <div className="mt-4">
+                <div className="mt-6">
                   <DataTable
                     data={penjualan}
                     columns={penjualanColumns}
@@ -856,6 +907,28 @@ export default function KasirPage() {
           )}
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-12">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="text-center md:text-left">
+              <p className="font-semibold text-gray-800">TEFA 26 - Point of Sale</p>
+              <p className="text-gray-600 text-sm mt-1">
+                SMK Negeri 2 Batusangkar
+              </p>
+            </div>
+            <div className="text-center md:text-right">
+              <p className="text-gray-600 text-sm">
+                © {new Date().getFullYear()} Teaching Factory Program
+              </p>
+              <p className="text-gray-500 text-xs mt-1">
+                Dibuat dengan <span className="text-green-600">♥</span> oleh Tim TEFA
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

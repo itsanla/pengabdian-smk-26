@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PenBox, Trash2 } from "lucide-react";
 import { apiRequest } from "@/services/api.service";
 import { DataTable } from "@/components/table/DataTable";
 import { AsalProduksi as AsalProduksiType } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 type Props = {
     onEditAsal: (asal: AsalProduksiType) => void;
@@ -13,29 +14,17 @@ type Props = {
 };
 
 export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
-    const [asalProduksiList, setAsalProduksiList] = useState<AsalProduksiType[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showConfirm, setShowConfirm] = useState(false);
     const [deleteId, setDeleteId] = useState<number | null>(null);
-
-    const fetchDataAsalProduksi = async () => {
-        try {
-            setLoading(true);
-            const data = await apiRequest({
-                endpoint: "/asal-produksi",
-            });
-            setAsalProduksiList(Array.isArray(data) ? data : [data]);
-        } catch (error) {
-            console.error("Gagal ambil data Asal Produksi:", error);
-            toast.error("Gagal mengambil data asal produksi.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDataAsalProduksi();
-    }, [reloadTrigger]);
+    const {
+        data: asalProduksiList,
+        meta,
+        page,
+        setPage,
+        loading,
+        refresh,
+    } = usePaginatedApi<AsalProduksiType>("/asal-produksi", [reloadTrigger]);
+    const pageSize = meta?.pageSize ?? 10;
 
     const handleDeleteClick = (id: number) => {
         setDeleteId(id);
@@ -50,7 +39,7 @@ export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
                     method: "DELETE",
                 });
                 toast.success("Data berhasil dihapus.");
-                fetchDataAsalProduksi();
+                refresh(1);
             } catch (error) {
                 console.error("Gagal hapus data Asal Produksi:", error);
                 toast.error("Gagal menghapus data.");
@@ -65,7 +54,11 @@ export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
         {
             header: "#",
             accessorKey: "id" as keyof AsalProduksiType,
-            cell: (item: AsalProduksiType) => (asalProduksiList.findIndex((p) => p.id === item.id) + 1).toString(),
+            cell: (item: AsalProduksiType) => (
+                (page - 1) * pageSize +
+                asalProduksiList.findIndex((p) => p.id === item.id) +
+                1
+            ).toString(),
         },
         { header: "Nama", accessorKey: "nama" as keyof AsalProduksiType },
         {
@@ -98,6 +91,17 @@ export default function AsalProduksi({ onEditAsal, reloadTrigger }: Props) {
                 loading={loading}
                 title="Daftar Asal Produksi"
                 emptyMessage="Tidak ada data asal produksi."
+                serverPagination={
+                    meta
+                        ? {
+                            page,
+                            pageSize: meta.pageSize,
+                            totalItems: meta.totalItems,
+                            totalPages: meta.totalPages,
+                            onPageChange: setPage,
+                        }
+                        : undefined
+                }
             />
             {showConfirm && (
                 <ConfirmButton

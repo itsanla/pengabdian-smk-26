@@ -5,11 +5,13 @@ export const apiRequest = async ({
   method = 'GET',
   data,
   token: providedToken,
+  returnFullResponse = false,
 }: {
   endpoint: string;
   method?: string;
   data?: any;
   token?: string;
+  returnFullResponse?: boolean;
 }) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -39,11 +41,43 @@ export const apiRequest = async ({
       data,
     });
 
-    return res.data.data;
+    return returnFullResponse ? res.data : res.data.data;
   } catch (error: any) {
     console.log("error", error.response?.data.errors)
     throw new Error(
       error.response?.data?.message || error.response?.error || error.message || 'Failed to fetch'
     );
   }
+};
+
+export const fetchAllPages = async <T,>({
+  endpoint,
+  pageSize = 50,
+  token,
+}: {
+  endpoint: string;
+  pageSize?: number;
+  token?: string;
+}): Promise<T[]> => {
+  const items: T[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  while (page <= totalPages) {
+    const separator = endpoint.includes("?") ? "&" : "?";
+    const response = await apiRequest({
+      endpoint: `${endpoint}${separator}page=${page}&pageSize=${pageSize}`,
+      token,
+      returnFullResponse: true,
+    });
+
+    const pageItems = Array.isArray(response?.data) ? response.data : [];
+    items.push(...pageItems);
+
+    if (!response?.meta) break;
+    totalPages = Number(response.meta.totalPages ?? totalPages);
+    page += 1;
+  }
+
+  return items;
 };

@@ -1,30 +1,29 @@
 "use client";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/DataTable";
 import CreateUpdateModal from "@/components/dashboard/CreateUpdateModal";
 import { Pencil, Trash2 } from "lucide-react";
 import { apiRequest } from "@/services/api.service";
 import { Barang } from "@/types";
 import ConfirmButton from "@/components/common/ConfirmButton";
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function DashboardBarang() {
-  const [barang, setBarang] = useState<Barang[]>([]);
   const [openCreate, setOpenCreate] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "update">("create");
   const [initialData, setInitialData] = useState<any>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-
-  const fetchData = async () => {
-    try {
-      const data = await apiRequest({endpoint: "/barang"});
-      const arr = (Array.isArray(data) ? data : [data]) as Barang[];
-      setBarang([...arr].sort((a, b) => b.id - a.id));
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
+  const {
+    data: barang,
+    meta,
+    page,
+    setPage,
+    loading,
+    refresh,
+  } = usePaginatedApi<Barang>("/barang");
+  const pageSize = meta?.pageSize ?? 10;
 
   const handleCreate = () => {
     setFormMode("create");
@@ -52,15 +51,11 @@ export default function DashboardBarang() {
         endpoint: `/barang/${deleteId}`,
         method: "DELETE",
       });
-      fetchData();
+      refresh(1);
       setShowConfirm(false);
       setDeleteId(null);
     }
   };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   return (
     <DashboardLayout title="Data Barang" role="">
@@ -72,7 +67,8 @@ export default function DashboardBarang() {
             {
               header: "#",
               accessorKey: "id",
-              cell: (item) => barang.findIndex((p) => p.id === item.id) + 1,
+              cell: (item) =>
+                (page - 1) * pageSize + barang.findIndex((p) => p.id === item.id) + 1,
             },
             { header: "Nama Barang", accessorKey: "nama" },
             { header: "Jumlah", accessorKey: "jumlah" },
@@ -109,6 +105,18 @@ export default function DashboardBarang() {
           pageSize={10}
           title="Daftar Barang"
           emptyMessage="Tidak ada data barang."
+          loading={loading}
+          serverPagination={
+            meta
+              ? {
+                  page,
+                  pageSize: meta.pageSize,
+                  totalItems: meta.totalItems,
+                  totalPages: meta.totalPages,
+                  onPageChange: setPage,
+                }
+              : undefined
+          }
         />
       </div>
 
@@ -116,7 +124,7 @@ export default function DashboardBarang() {
         open={openCreate}
         onClose={() => setOpenCreate(false)}
         onSuccess={() => {
-          fetchData();
+          refresh(1);
           setOpenCreate(false);
         }}
         mode={formMode}

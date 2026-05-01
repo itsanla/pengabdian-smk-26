@@ -1,42 +1,31 @@
 "use client";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DataTable } from "@/components/table/DataTable";
 import { apiRequest } from "@/services/api.service";
-import { User, RoleUser } from "@/types";
+import { User } from "@/types";
 import { createColumns } from "@/components/table_master/user";
 import CreateUpdateModal from "@/components/dashboard/CreateUpdateModal";
 import ConfirmButton from "@/components/common/ConfirmButton";
 import toast from "react-hot-toast";
 import { PlusCircle } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table"; // Import ColumnDef
+import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 
 export default function UserPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "update">("create");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const data = await apiRequest({ endpoint: "/users" });
-      const arr = (Array.isArray(data) ? data : [data]) as User[];
-      setUsers([...arr].sort((a, b) => b.id - a.id));
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Gagal mengambil data user.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const {
+    data: users,
+    meta,
+    page,
+    setPage,
+    loading,
+    refresh,
+  } = usePaginatedApi<User>("/users");
 
   const handleCreateClick = () => {
     setModalMode("create");
@@ -64,7 +53,7 @@ export default function UserPage() {
           method: "DELETE",
         });
         toast.success("User berhasil dihapus.");
-        fetchUsers();
+        refresh(1);
       } catch (error: any) {
         console.error("Error deleting user:", error);
         toast.error(error.response?.data?.message || "Gagal menghapus user.");
@@ -76,7 +65,7 @@ export default function UserPage() {
   };
 
   const handleModalSuccess = () => {
-    fetchUsers();
+    refresh(1);
     toast.success(`User berhasil ${modalMode === "create" ? "ditambahkan" : "diupdate"}.`);
   };
 
@@ -140,6 +129,17 @@ export default function UserPage() {
         loading={loading}
         title="Daftar User"
         emptyMessage="Tidak ada data user."
+        serverPagination={
+          meta
+            ? {
+                page,
+                pageSize: meta.pageSize,
+                totalItems: meta.totalItems,
+                totalPages: meta.totalPages,
+                onPageChange: setPage,
+              }
+            : undefined
+        }
       />
 
       {showModal && (

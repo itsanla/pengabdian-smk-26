@@ -1,5 +1,5 @@
 "use client";
-import { apiRequest } from "@/services/api.service";
+import { apiRequest, fetchAllPages } from "@/services/api.service";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -105,10 +105,10 @@ export default function InputProduksiForm({
 
     const fetchDataAsal = async () => {
         try {
-            const data = await apiRequest({
-                endpoint: "/asal-produksi"
+            const data = await fetchAllPages({
+                endpoint: "/asal-produksi",
             });
-            setAsalList(data);
+            setAsalList(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Gagal ambil data Asal:", error);
             toast.error("Gagal mengambil data asal produksi.");
@@ -117,10 +117,10 @@ export default function InputProduksiForm({
 
     const fetchDataKomoditas = async () => {
         try {
-            const data = await apiRequest({
-                endpoint: "/komoditas"
+            const data = await fetchAllPages({
+                endpoint: "/komoditas",
             });
-            setKomoditasList(data);
+            setKomoditasList(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error("Gagal ambil data Komoditas:", error);
             toast.error("Gagal mengambil data komoditas.");

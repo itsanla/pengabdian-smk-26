@@ -11,6 +11,7 @@ import {
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 import type { Env, Variables } from "../types";
 
 export const produksiApp = new Hono<{
@@ -21,10 +22,20 @@ export const produksiApp = new Hono<{
 produksiApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(produksiTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
     const produksis = await db
       .select()
       .from(produksiTable)
       .orderBy(desc(produksiTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
       .all();
 
     const data = await Promise.all(
@@ -61,6 +72,7 @@ produksiApp.get("/", async (c) => {
       success: true,
       message: "Berhasil mengambil semua data produksi.",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);

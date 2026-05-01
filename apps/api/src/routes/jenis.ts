@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { jenisTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { handleAnyError } from "../errors/app_error";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 import type { Env, Variables } from "../types";
 
 export const jenisApp = new Hono<{ Bindings: Env; Variables: Variables }>();
@@ -12,16 +13,29 @@ export const jenisApp = new Hono<{ Bindings: Env; Variables: Variables }>();
 jenisApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(jenisTable)
+      .where(eq(jenisTable.isDeleted, 0))
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
     const data = await db
       .select()
       .from(jenisTable)
       .where(eq(jenisTable.isDeleted, 0))
+      .orderBy(desc(jenisTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
       .all()
       .then(rows => rows.map(convertTimestamps));
     return c.json({
       success: true,
       message: "Berhasil mengembil semua jenis.",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);

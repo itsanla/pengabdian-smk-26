@@ -1,10 +1,11 @@
 import { Hono } from "hono";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { asalProduksiTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import { convertTimestamps } from "../utils/date";
+import { buildPaginationMeta, parsePagination } from "../utils/pagination";
 import type { Env, Variables } from "../types";
 
 export const asalProduksiApp = new Hono<{
@@ -15,16 +16,27 @@ export const asalProduksiApp = new Hono<{
 asalProduksiApp.get("/", async (c) => {
   try {
     const db = getDb(c.env);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(asalProduksiTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
     const data = await db
       .select()
       .from(asalProduksiTable)
       .orderBy(desc(asalProduksiTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
       .all()
       .then(rows => rows.map(convertTimestamps));
     return c.json({
       success: true,
       message: "Berhasil mengambil semua asal produksi.",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
     return handleAnyError(c, error);
