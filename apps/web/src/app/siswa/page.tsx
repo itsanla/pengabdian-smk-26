@@ -343,7 +343,7 @@ export default function KasirPage() {
         if (printableItems.length > 0) {
           printStruk({
             items: printableItems,
-            totalHarga: requestBody.items.reduce(
+            total_harga: requestBody.items.reduce(
               (sum, item) => sum + item.total_harga,
               0,
             ),
@@ -351,7 +351,7 @@ export default function KasirPage() {
               .map((item) => item.keterangan.trim())
               .filter(Boolean)
               .join(" | "),
-            tanggal: new Date(),
+            created_at: new Date(),
           });
         }
       }
