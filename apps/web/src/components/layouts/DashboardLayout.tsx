@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import DashboardSidebar from "../dashboard/DashboardSidebar";
 import DashboardHeader from "../dashboard/DashboardHeader";
 
@@ -13,6 +13,13 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({ children, title, role }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Paint the body green so the rounded main-panel corners show sidebar colour, not body bg
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = "#1A4731";
+    return () => { document.body.style.background = prev; };
+  }, []);
 
   return (
     <div

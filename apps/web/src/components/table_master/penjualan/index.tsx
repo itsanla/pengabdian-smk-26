@@ -174,15 +174,30 @@ export default function Penjualan() {
       cell: (item: PenjualanType) => (
         <div className="relative flex items-center gap-2 justify-end">
           <button
-            className="tf-action tf-action-info"
             onClick={() => togglePenjualanDropdown(item.id)}
             type="button"
-            title="Detail"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "6px 12px",
+              borderRadius: 9,
+              border: "1.5px solid #E5E7EB",
+              background: expandedPenjualanId === item.id ? "#EFF6FF" : "#fff",
+              color: expandedPenjualanId === item.id ? "#2563EB" : "#374151",
+              borderColor: expandedPenjualanId === item.id ? "#BFDBFE" : "#E5E7EB",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: "inherit",
+              transition: "all .15s",
+            }}
           >
+            Detail
             {expandedPenjualanId === item.id ? (
-              <ChevronUp size={16} />
+              <ChevronUp size={14} />
             ) : (
-              <ChevronDown size={16} />
+              <ChevronDown size={14} />
             )}
           </button>
 
@@ -195,84 +210,7 @@ export default function Penjualan() {
             <Printer size={16} />
           </button>
 
-          {expandedPenjualanId === item.id && (
-            <div className="absolute right-0 top-full z-20 mt-2 w-[28rem] rounded-xl border border-gray-200 bg-white p-4 shadow-2xl">
-              {loadingPenjualanDetailId === item.id ? (
-                <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-                  Memuat item penjualan...
-                </div>
-              ) : (
-                <>
-                  <div className="mb-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Item Penjualan
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {penjualanDetails[item.id]?.items?.length ?? 0} item
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setExpandedPenjualanId(null)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
-                    >
-                      Tutup
-                    </button>
-                  </div>
-
-                  <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                    {(penjualanDetails[item.id]?.items ?? []).length > 0 ? (
-                      penjualanDetails[item.id]!.items!.map((detailItem) => (
-                        <div
-                          key={detailItem.id}
-                          className="rounded-lg border border-gray-200 p-3 text-sm"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {detailItem.komoditas?.nama ?? "-"}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {detailItem.produksi?.kode_produksi ?? "-"} ·{" "}
-                                {detailItem.produksi?.ukuran ?? "-"} ·{" "}
-                                {detailItem.produksi?.kualitas ?? "-"}
-                              </p>
-                            </div>
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
-                              {detailItem.jumlah_terjual} pcs
-                            </span>
-                          </div>
-
-                          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
-                            <span>
-                              Rp
-                              {new Intl.NumberFormat("id-ID").format(
-                                detailItem.harga_satuan,
-                              )}
-                              ,-
-                            </span>
-                            <span>
-                              Subtotal Rp
-                              {new Intl.NumberFormat("id-ID").format(
-                                detailItem.sub_total,
-                              )}
-                              ,-
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="rounded-lg border border-dashed border-gray-300 px-3 py-6 text-center text-sm text-gray-500">
-                        Tidak ada detail item.
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
+          {/* modal dirender di level atas, bukan di sini */}
         </div>
       ),
     },
@@ -320,6 +258,108 @@ export default function Penjualan() {
         title="Daftar Penjualan"
         emptyMessage="Tidak ada data penjualan."
       />
+
+      {/* ── Detail Modal — dirender di luar tabel agar fixed positioning bekerja ── */}
+      {expandedPenjualanId !== null && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+          onClick={() => setExpandedPenjualanId(null)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 20,
+              width: "100%",
+              maxWidth: 480,
+              boxShadow: "0 32px 80px rgba(0,0,0,.2)",
+              animation: "dt-slideUp .25s cubic-bezier(.34,1.56,.64,1)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div style={{
+              padding: "18px 20px 14px",
+              borderBottom: "1px solid #F3F4F6",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
+                  Item Penjualan
+                </p>
+                <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
+                  {penjualanDetails[expandedPenjualanId]?.items?.length ?? 0} item
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExpandedPenjualanId(null)}
+                style={{
+                  width: 28, height: 28, borderRadius: "50%",
+                  border: "none", background: "#F3F4F6",
+                  cursor: "pointer", fontSize: 13, color: "#6B7280",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}
+              >✕</button>
+            </div>
+
+            {/* Body */}
+            {loadingPenjualanDetailId === expandedPenjualanId ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "48px 20px", color: "#9CA3AF", fontSize: 14 }}>
+                <div style={{ width: 16, height: 16, border: "2px solid #2563EB", borderTopColor: "transparent", borderRadius: "50%", animation: "dt-spin .8s linear infinite" }} />
+                Memuat item penjualan...
+              </div>
+            ) : (
+              <div style={{ padding: "14px 20px 20px", maxHeight: "60vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                {(penjualanDetails[expandedPenjualanId]?.items ?? []).length > 0 ? (
+                  penjualanDetails[expandedPenjualanId]!.items!.map((detailItem) => (
+                    <div
+                      key={detailItem.id}
+                      style={{ border: "1px solid #F3F4F6", borderRadius: 12, padding: "12px 14px", background: "#FAFAFA" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontWeight: 600, fontSize: 14, color: "#111827", margin: 0 }}>
+                            {detailItem.komoditas?.nama ?? "-"}
+                          </p>
+                          <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
+                            {detailItem.produksi?.kode_produksi ?? "-"} · {detailItem.produksi?.ukuran ?? "-"} · {detailItem.produksi?.kualitas ?? "-"}
+                          </p>
+                        </div>
+                        <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>
+                          {detailItem.jumlah_terjual} pcs
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                        <span>Rp{new Intl.NumberFormat("id-ID").format(detailItem.harga_satuan)},-</span>
+                        <span style={{ fontWeight: 600, color: "#111827" }}>
+                          Subtotal Rp{new Intl.NumberFormat("id-ID").format(detailItem.sub_total)},-
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ border: "1.5px dashed #E5E7EB", borderRadius: 12, padding: "32px 16px", textAlign: "center", fontSize: 14, color: "#9CA3AF" }}>
+                    Tidak ada detail item.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

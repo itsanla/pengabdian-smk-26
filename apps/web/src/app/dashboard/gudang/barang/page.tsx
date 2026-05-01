@@ -19,7 +19,8 @@ export default function DashboardBarang() {
   const fetchData = async () => {
     try {
       const data = await apiRequest({endpoint: "/barang"});
-      setBarang(data);
+      const arr = (Array.isArray(data) ? data : [data]) as Barang[];
+      setBarang([...arr].sort((a, b) => b.id - a.id));
     } catch (error) {
       console.error("Error fetching data:", error);
     }

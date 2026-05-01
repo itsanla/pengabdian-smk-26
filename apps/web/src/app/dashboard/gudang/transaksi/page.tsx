@@ -27,8 +27,8 @@ export default function DashboardBarang() {
     try {
       setLoading(true);
       const data = await apiRequest({ endpoint: "/transaksi-barang" });
-      setBarangMasuk(data.barang_masuk);
-      setBarangKeluar(data.barang_keluar);
+      setBarangMasuk([...(data.barang_masuk ?? [])].sort((a: TransaksiBarang, b: TransaksiBarang) => b.id - a.id));
+      setBarangKeluar([...(data.barang_keluar ?? [])].sort((a: TransaksiBarang, b: TransaksiBarang) => b.id - a.id));
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -318,8 +318,18 @@ export default function DashboardBarang() {
 
       {/* Modal Form */}
       {openCreate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+        <div
+          className="fixed inset-0 z-50 flex justify-center items-center"
+          style={{
+            background: "rgba(0,0,0,0.35)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+            style={{ boxShadow: "0 32px 80px rgba(0,0,0,.2)", maxHeight: "90vh", overflowY: "auto" }}
+          >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-bold">
                 {formMode === "create" 
@@ -451,20 +461,22 @@ export default function DashboardBarang() {
               </div>
 
               {/* Buttons */}
-              <div className="flex justify-end gap-2 pt-4">
+              <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setOpenCreate(false)}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg transition-colors">
+                  style={{
+                    flex: 1, padding: "10px", borderRadius: 10,
+                    border: "1.5px solid #E5E7EB", background: "#fff",
+                    fontSize: 14, fontWeight: 600, color: "#374151",
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}>
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
-                    transactionType === "masuk"
-                      ? "bg-green-600 hover:bg-green-700"
-                      : "bg-red-600 hover:bg-red-700"
-                  }`}
+                  className={transactionType === "masuk" ? "tf-btn-green" : "tf-btn-red"}
+                  style={{ flex: 1, justifyContent: "center" }}
                 >
                   {formMode === "create" ? "Simpan" : "Update"}
                 </button>

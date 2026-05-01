@@ -25,7 +25,8 @@ export default function Jenis_Komoditas({ onEdit, reloadTrigger }: Props) {
       const data = await apiRequest({
         endpoint: "/jenis"
       });
-      setJenisList(Array.isArray(data) ? data : [data]);
+      const arr = (Array.isArray(data) ? data : [data]) as JenisType[];
+      setJenisList([...arr].sort((a, b) => b.id - a.id));
     } catch (err) {
       console.error("Gagal ambil data jenis:", err);
       toast.error("Gagal mengambil data jenis komoditas.");

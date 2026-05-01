@@ -77,8 +77,18 @@ export default function ModalForm({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+    <div
+      className="fixed inset-0 z-50 flex justify-center items-center"
+      style={{
+        background: "rgba(0,0,0,0.35)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+    >
+      <div
+        className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+        style={{ boxShadow: "0 32px 80px rgba(0,0,0,.2)", border: "1px solid rgba(0,0,0,.06)" }}
+      >
         <h2 className="text-lg font-bold mb-4">
           {mode === "create" ? `Tambah ${title}` : `Edit ${title}`}
         </h2>
@@ -114,16 +124,19 @@ export default function ModalForm({
             </div>
           ))}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex gap-3 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">
+              style={{
+                flex: 1, padding: "10px", borderRadius: 10,
+                border: "1.5px solid #E5E7EB", background: "#fff",
+                fontSize: 14, fontWeight: 600, color: "#374151",
+                cursor: "pointer", fontFamily: "inherit",
+              }}>
               Batal
             </button>
-            <button
-              type="submit"
-              className="bg-green-700 hover:bg-green-600 text-white px-4 py-2 rounded">
+            <button type="submit" className="tf-btn-green" style={{ flex: 1, justifyContent: "center" }}>
               {mode === "create" ? "Simpan" : "Update"}
             </button>
           </div>

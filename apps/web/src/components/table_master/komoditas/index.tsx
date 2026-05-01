@@ -27,7 +27,8 @@ export default function Komoditas() {
                 endpoint: "/komoditas",
             });
             console.log("DATA DARI BACKEND:", data);
-            setKomoditasList(Array.isArray(data) ? data : [data]);
+            const arr = (Array.isArray(data) ? data : [data]) as KomoditasType[];
+            setKomoditasList([...arr].sort((a, b) => b.id - a.id));
         } catch (err) {
             console.error("Gagal ambil data Komoditas:", err);
             toast.error("Gagal mengambil data komoditas.");

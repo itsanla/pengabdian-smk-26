@@ -21,30 +21,74 @@ const ConfirmButton = ({ message, onConfirm, onCancel }: ConfirmProps) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{
+        background: "rgba(0,0,0,0.35)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+    >
       <div
-        className={`bg-white p-4 rounded-lg shadow w-72 transform transition duration-200 ${
+        className={`bg-white rounded-2xl shadow-2xl w-80 p-6 transform transition duration-200 ${
           show ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
+        style={{ border: "1px solid rgba(0,0,0,.06)" }}
       >
-        <div className="flex justify-center mb-3">
-          <AlertTriangle className="w-10 h-10 text-red-500" />
+        <div className="flex justify-center mb-4">
+          <div
+            style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: "#FEF2F2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <AlertTriangle className="w-7 h-7 text-red-500" />
+          </div>
         </div>
 
-        <p className="text-center text-sm mb-4">{message}</p>
+        <p className="text-center text-sm text-gray-600 mb-6 leading-relaxed">
+          {message}
+        </p>
 
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={onConfirm}
-            className="px-3 py-1 text-white bg-red-500 rounded hover:bg-red-600"
-          >
-            Ya
-          </button>
+        <div className="flex gap-3">
           <button
             onClick={handleClose}
-            className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
+            style={{
+              flex: 1,
+              padding: "10px",
+              borderRadius: 10,
+              border: "1.5px solid #E5E7EB",
+              background: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#374151",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
           >
             Batal
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1,
+              padding: "10px",
+              borderRadius: 10,
+              border: "none",
+              background: "#EF4444",
+              fontSize: 14,
+              fontWeight: 600,
+              color: "#fff",
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Hapus
           </button>
         </div>
       </div>

@@ -24,7 +24,8 @@ export default function UserPage() {
     try {
       setLoading(true);
       const data = await apiRequest({ endpoint: "/users" });
-      setUsers(data);
+      const arr = (Array.isArray(data) ? data : [data]) as User[];
+      setUsers([...arr].sort((a, b) => b.id - a.id));
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Gagal mengambil data user.");
