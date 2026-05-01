@@ -31,6 +31,18 @@ interface Komoditas {
   isNew?: boolean;
 }
 
+// API response interface
+interface KomoditasApiResponse {
+  id: number;
+  nama: string;
+  deskripsi: string;
+  foto?: string;
+  jumlah: number;
+  satuan: string;
+  jenis?: { name: string };
+  updatedAt?: string;
+}
+
 const KomoditasPage = () => {
   // State for API data
   const [komoditas, setKomoditas] = useState<Komoditas[]>([]);
@@ -63,24 +75,22 @@ const KomoditasPage = () => {
 
           if (response && Array.isArray(response)) {
             // Process data to match our interface
-            const processedData = Array.isArray(response)
-              ? response.map((item) => ({
-                  id: String(item.id), // Convert number to string
-                  nama: item.nama,
-                  deskripsi: item.deskripsi,
-                  foto: item.foto?.startsWith("http")
-                    ? item.foto
-                    : `/image/${item.foto}`, // Handle both Cloudinary and local paths
-                  jumlah: item.jumlah,
-                  satuan: item.satuan,
-                  jenis: { name: item.jenis?.name || "Komoditas Premium" }, // Ensure consistent jenis structure
-                  updated_at: item.updatedAt || new Date().toISOString(), // Map updatedAt to updated_at
-                  features: [
-                    item.jenis?.name || "Komoditas Premium",
-                    `Stok: ${item.jumlah} ${item.satuan}`,
-                  ],
-                }))
-              : [];
+            const processedData = (response as KomoditasApiResponse[]).map((item) => ({
+              id: String(item.id), // Convert number to string
+              nama: item.nama,
+              deskripsi: item.deskripsi,
+              foto: item.foto?.startsWith("http")
+                ? item.foto
+                : `/image/${item.foto}`, // Handle both Cloudinary and local paths
+              jumlah: item.jumlah,
+              satuan: item.satuan,
+              jenis: { name: item.jenis?.name || "Komoditas Premium" }, // Ensure consistent jenis structure
+              updated_at: item.updatedAt || new Date().toISOString(), // Map updatedAt to updated_at
+              features: [
+                item.jenis?.name || "Komoditas Premium",
+                `Stok: ${item.jumlah} ${item.satuan}`,
+              ],
+            }));
 
             console.log("Fetched komoditas data:", processedData);
             setKomoditas(processedData);
