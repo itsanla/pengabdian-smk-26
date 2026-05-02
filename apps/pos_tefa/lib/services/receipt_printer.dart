@@ -158,34 +158,40 @@ class ReceiptPrinter {
     Generator generator,
     PenjualanDetail sale,
   ) {
+    /*   final bytes = generator.text(
+      "TEST",
+      styles: const PosStyles(align: PosAlign.center),
+    );
+
+    print(bytes);
+    return bytes; */
     final bytes = <int>[];
 
     bytes.addAll(generator.reset());
+
+    bytes.addAll([27, 97, 1]);
+    bytes.addAll([27, 97, 1]);
     bytes.addAll(
       generator.text(
         'SMK NEGERI 2 BATUSANGKAR',
         styles: const PosStyles(
-          align: PosAlign.center,
           bold: true,
           height: PosTextSize.size1,
           width: PosTextSize.size1,
         ),
       ),
     );
-    bytes.addAll(
-      generator.text(
-        'Teaching Factory (TEFA)',
-        styles: const PosStyles(align: PosAlign.center),
-      ),
-    );
+
+    bytes.addAll(generator.text('Teaching Factory (TEFA)'));
+    bytes.addAll([27, 97, 0]);
+
     bytes.addAll(generator.hr(ch: '-', linesAfter: 0));
+
+    bytes.addAll([27, 97, 1]);
     bytes.addAll(
-      generator.text(
-        Helpers.formatTanggal(sale.createdAt),
-        styles: const PosStyles(align: PosAlign.center),
-        linesAfter: 0,
-      ),
+      generator.text(Helpers.formatTanggal(sale.createdAt), linesAfter: 0),
     );
+    bytes.addAll([27, 97, 0]);
     bytes.addAll(generator.hr(ch: '-', linesAfter: 0));
 
     final isMultiItems = sale.items.length > 1;
@@ -323,18 +329,11 @@ class ReceiptPrinter {
       bytes.addAll(generator.hr(ch: '-', linesAfter: 0));
     }
 
-    bytes.addAll(
-      generator.text(
-        'Terima kasih atas pembelian Anda!',
-        styles: const PosStyles(align: PosAlign.center),
-      ),
-    );
-    bytes.addAll(
-      generator.text(
-        '-- SMKN 2 Batusangkar --',
-        styles: const PosStyles(align: PosAlign.center),
-      ),
-    );
+    bytes.addAll([27, 97, 1]);
+    bytes.addAll(generator.text('Terima kasih atas pembelian Anda!'));
+    bytes.addAll(generator.text('-- SMKN 2 Batusangkar --'));
+    bytes.addAll([27, 97, 0]);
+
     bytes.addAll(generator.feed(2));
     bytes.addAll(generator.cut());
 
@@ -349,7 +348,7 @@ class ReceiptPrinter {
         width: 6,
         styles: const PosStyles(align: PosAlign.right),
       ),
-    ]);
+    ], multiLine: false);
   }
 
   void _writeLabelValue(StringBuffer buffer, String label, String value) {

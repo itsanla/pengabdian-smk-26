@@ -538,10 +538,8 @@ class _ReceiptPrintScreenState extends State<ReceiptPrintScreen> {
                               .map(
                                 (device) => DropdownMenuItem<String>(
                                   value: device.macAdress,
-                                  child: Expanded(
-                                    child: Text(
-                                      '${device.name.isEmpty ? 'Unknown' : device.name} (${device.macAdress})',
-                                    ),
+                                  child: Text(
+                                    '${device.name.isEmpty ? 'Unknown' : device.name} (${device.macAdress})',
                                   ),
                                 ),
                               )
