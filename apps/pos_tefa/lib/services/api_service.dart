@@ -22,13 +22,32 @@ class ApiUnauthorizedException extends ApiException {
   ]);
 }
 
+class PenjualanListResponse {
+  PenjualanListResponse({required this.items, this.totalItems});
+
+  final List<Penjualan> items;
+  final int? totalItems;
+}
+
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   static const String baseUrl = 'https://api.smk2batusangkar.tech/api';
   final http.Client _client;
 
-  Uri _uri(String path) => Uri.parse('$baseUrl$path');
+  Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
+    final uri = Uri.parse('$baseUrl$path');
+
+    if (queryParameters == null || queryParameters.isEmpty) {
+      return uri;
+    }
+
+    return uri.replace(
+      queryParameters: queryParameters.map(
+        (key, value) => MapEntry(key, value?.toString() ?? ''),
+      ),
+    );
+  }
 
   Never _throwUnauthorized() {
     throw ApiUnauthorizedException();
@@ -91,9 +110,18 @@ class ApiService {
     return AuthSession.fromJson(data);
   }
 
-  Future<List<Penjualan>> getPenjualan(String token) async {
+  Future<PenjualanListResponse> getPenjualan(
+    String token, {
+    int page = 1,
+    int pageSize = 10,
+    String search = '',
+  }) async {
     final response = await _client.get(
-      _uri('/penjualan'),
+      _uri('/penjualan', {
+        'page': page,
+        'pageSize': pageSize,
+        if (search.trim().isNotEmpty) 'search': search.trim(),
+      }),
       headers: _jsonHeaders(token: token),
     );
 
@@ -109,14 +137,48 @@ class ApiService {
     }
 
     final data = body['data'];
-    if (data is! List) {
-      return const <Penjualan>[];
+    final items = <Penjualan>[];
+    if (data is List) {
+      items.addAll(
+        data.whereType<Map<String, dynamic>>().map(Penjualan.fromJson),
+      );
     }
 
-    return data
-        .whereType<Map<String, dynamic>>()
-        .map(Penjualan.fromJson)
-        .toList(growable: false);
+    final totalItems = _readTotalItems(body);
+
+    return PenjualanListResponse(items: items, totalItems: totalItems);
+  }
+
+  int? _readTotalItems(Map<String, dynamic> body) {
+    final directValue = body['totalItems'] ?? body['total_items'];
+    final directCount = _tryParseInt(directValue);
+    if (directCount != null) {
+      return directCount;
+    }
+
+    final meta = body['meta'];
+    if (meta is Map<String, dynamic>) {
+      final nestedValue = meta['totalItems'] ?? meta['total_items'];
+      return _tryParseInt(nestedValue);
+    }
+
+    return null;
+  }
+
+  int? _tryParseInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    if (value is String) {
+      return int.tryParse(value);
+    }
+
+    return null;
   }
 
   Future<List<Produksi>> getProductions(String token) async {

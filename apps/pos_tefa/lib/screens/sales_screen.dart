@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,30 +29,83 @@ class SalesScreen extends StatefulWidget {
 
 class _SalesScreenState extends State<SalesScreen> {
   final SalesProvider _provider = SalesProvider();
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
     Future.microtask(_loadSales);
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
     _provider.dispose();
     super.dispose();
   }
 
+  void _handleScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+
+    final position = _scrollController.position;
+    if (position.extentAfter > 300) {
+      return;
+    }
+
+    unawaited(_loadMoreSales());
+  }
+
   Future<void> _loadSales() async {
+    await _loadSalesWithSearch(_searchController.text);
+  }
+
+  Future<void> _loadSalesWithSearch(String searchQuery) async {
     try {
-      await _provider.loadSales(widget.session.token);
+      await _provider.loadSales(widget.session.token, searchQuery: searchQuery);
     } on ApiUnauthorizedException {
       if (!mounted) return;
       await widget.onSessionExpired();
     } on ApiException catch (error) {
       if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
+        SnackBar(content: Text('Gagal memuat data penjualan: $error')),
       );
+    }
+  }
+
+  void _handleSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      unawaited(_loadSalesWithSearch(value));
+    });
+  }
+
+  Future<void> _loadMoreSales() async {
+    try {
+      await _provider.loadMoreSales(widget.session.token);
+    } on ApiUnauthorizedException {
+      if (!mounted) return;
+      await widget.onSessionExpired();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -61,7 +116,10 @@ class _SalesScreenState extends State<SalesScreen> {
 
   Future<void> _openSaleDetail(Penjualan sale) async {
     try {
-      final detail = await _provider.loadSaleDetail(widget.session.token, sale.id);
+      final detail = await _provider.loadSaleDetail(
+        widget.session.token,
+        sale.id,
+      );
       if (!mounted) return;
 
       await showModalBottomSheet<void>(
@@ -81,9 +139,9 @@ class _SalesScreenState extends State<SalesScreen> {
       await widget.onSessionExpired();
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -93,6 +151,8 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 
   Future<void> _handleCreateSale() async {
+    _searchDebounce?.cancel();
+    _searchController.clear();
     _provider.clear();
     final created = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
@@ -115,6 +175,9 @@ class _SalesScreenState extends State<SalesScreen> {
         onOpenPrinter: widget.onOpenPrinter,
         onSelectSale: _openSaleDetail,
         onCreateSale: _handleCreateSale,
+        onSearchChanged: _handleSearchChanged,
+        scrollController: _scrollController,
+        searchController: _searchController,
       ),
     );
   }

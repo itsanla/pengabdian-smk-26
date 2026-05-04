@@ -6,48 +6,35 @@ import '../models/penjualan.dart';
 import '../services/api_service.dart';
 
 class SalesProvider extends ChangeNotifier {
-  SalesProvider({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  SalesProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
   final ApiService _apiService;
 
   final List<Penjualan> _sales = <Penjualan>[];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _errorMessage;
   String _statusMessage = 'Memuat data penjualan...';
   String _searchQuery = '';
   int? _printingSaleId;
+  int? pageItems = 1;
+  int sizeItems = 10;
+  int? _totalItems;
 
   UnmodifiableListView<Penjualan> get sales =>
       UnmodifiableListView<Penjualan>(_sales);
   bool get isLoading => _isLoading;
+  bool get isLoadingMore => _isLoadingMore;
+  bool get hasMoreSales => pageItems != null;
   String? get errorMessage => _errorMessage;
   String get statusMessage => _statusMessage;
   String get searchQuery => _searchQuery;
   int? get printingSaleId => _printingSaleId;
+  int get totalItems => _totalItems ?? _sales.length;
 
   List<Penjualan> get filteredSales {
-    if (_searchQuery.trim().isEmpty) {
-      return List<Penjualan>.unmodifiable(_sales);
-    }
-
-    final query = _searchQuery.toLowerCase();
-    return _sales
-        .where((sale) {
-          return sale.id.toString().contains(query) ||
-              sale.keterangan.toLowerCase().contains(query);
-        })
-        .toList(growable: false);
-  }
-
-  int get totalValue => _sales.fold<int>(0, (sum, sale) => sum + sale.totalHarga);
-
-  void setSearchQuery(String value) {
-    if (_searchQuery == value) {
-      return;
-    }
-
-    _searchQuery = value;
-    notifyListeners();
+    return List<Penjualan>.unmodifiable(_sales);
   }
 
   void setPrintingSaleId(int? saleId) {
@@ -59,20 +46,57 @@ class SalesProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadSales(String token) async {
-    _isLoading = true;
+  Future<void> loadSales(String token, {String searchQuery = ''}) async {
+    resetData(searchQuery: searchQuery);
+    await fetchSales(token);
+  }
+
+  Future<void> loadMoreSales(String token) async {
+    if (pageItems == null || _isLoading || _isLoadingMore) {
+      return;
+    }
+
+    await fetchSales(token);
+  }
+
+  Future<void> fetchSales(String token) async {
+    if (pageItems == null) {
+      return;
+    }
+
+    final currentPage = pageItems!;
+    final isInitialLoad = _sales.isEmpty && currentPage == 1;
+
+    if (isInitialLoad) {
+      _isLoading = true;
+    } else {
+      _isLoadingMore = true;
+    }
+
     _errorMessage = null;
-    _statusMessage = 'Memuat data penjualan...';
     notifyListeners();
 
     try {
-      final sales = await _apiService.getPenjualan(token);
-      _sales
-        ..clear()
-        ..addAll(sales);
-      _statusMessage = sales.isEmpty
-          ? 'Belum ada data penjualan yang tersimpan.'
-          : 'Data penjualan berhasil dimuat.';
+      final response = await _apiService.getPenjualan(
+        token,
+        page: currentPage,
+        pageSize: sizeItems,
+        search: _searchQuery,
+      );
+
+      _sales.addAll(response.items);
+      _totalItems = response.totalItems ?? _sales.length;
+
+      if (response.items.length < sizeItems) {
+        pageItems = null;
+        _statusMessage = _sales.isEmpty
+            ? 'Belum ada data penjualan yang tersimpan.'
+            : 'Semua data penjualan sudah dimuat.';
+      } else {
+        pageItems = currentPage + 1;
+        _statusMessage =
+            'Data penjualan berhasil dimuat. Gulir ke bawah untuk memuat data berikutnya.';
+      }
     } on ApiUnauthorizedException catch (error) {
       _errorMessage = error.message;
       _statusMessage = error.message;
@@ -87,6 +111,7 @@ class SalesProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isLoading = false;
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
@@ -98,10 +123,25 @@ class SalesProvider extends ChangeNotifier {
   void clear() {
     _sales.clear();
     _isLoading = true;
+    _isLoadingMore = false;
+    pageItems = 1;
     _errorMessage = null;
     _statusMessage = 'Memuat data penjualan...';
     _searchQuery = '';
+    _totalItems = null;
     _printingSaleId = null;
+    notifyListeners();
+  }
+
+  void resetData({String? searchQuery}) {
+    _sales.clear();
+    _isLoading = true;
+    _isLoadingMore = false;
+    pageItems = 1;
+    _errorMessage = null;
+    _statusMessage = 'Memuat data penjualan...';
+    _searchQuery = searchQuery?.trim() ?? _searchQuery;
+    _totalItems = null;
     notifyListeners();
   }
 }

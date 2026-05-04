@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../models/app_models.dart';
 import '../models/penjualan.dart';
 import '../providers/sales_provider.dart';
-import '../utils/helpers.dart';
 import '../widgets/sale_card.dart';
 import '../widgets/stat_chip_widget.dart';
 
@@ -16,6 +15,9 @@ class SalesListSection extends StatelessWidget {
     required this.onOpenPrinter,
     required this.onSelectSale,
     required this.onCreateSale,
+    required this.onSearchChanged,
+    this.scrollController,
+    this.searchController,
   });
 
   final AuthSession session;
@@ -23,6 +25,9 @@ class SalesListSection extends StatelessWidget {
   final VoidCallback onOpenPrinter;
   final Function(Penjualan) onSelectSale;
   final VoidCallback onCreateSale;
+  final ValueChanged<String> onSearchChanged;
+  final ScrollController? scrollController;
+  final TextEditingController? searchController;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +38,7 @@ class SalesListSection extends StatelessWidget {
         return RefreshIndicator(
           onRefresh: onRefresh,
           child: ListView(
+            controller: scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
@@ -52,7 +58,8 @@ class SalesListSection extends StatelessWidget {
                   children: [
                     Text(
                       'Penjualan',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
@@ -63,11 +70,7 @@ class SalesListSection extends StatelessWidget {
                       runSpacing: 10,
                       children: [
                         StatChipWidget(
-                          label: '${provider.sales.length} penjualan',
-                          color: Colors.white,
-                        ),
-                        StatChipWidget(
-                          label: Helpers.formatRupiah(provider.totalValue),
+                          label: '${provider.totalItems} penjualan',
                           color: Colors.white,
                         ),
                       ],
@@ -79,9 +82,10 @@ class SalesListSection extends StatelessWidget {
 
               // Search field
               TextField(
-                onChanged: provider.setSearchQuery,
+                controller: searchController,
+                onChanged: onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: 'Cari penjualan atau keterangan',
+                  hintText: 'Cari penjualan',
                   prefixIcon: const Icon(Icons.search_rounded),
                   filled: true,
                   fillColor: Colors.white,
@@ -144,9 +148,9 @@ class SalesListSection extends StatelessWidget {
               // Sales list title
               Text(
                 'Daftar Penjualan',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
 
@@ -170,9 +174,8 @@ class SalesListSection extends StatelessWidget {
                     children: [
                       Text(
                         'Data penjualan tidak ditemukan',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 6),
                       const Text(
@@ -187,7 +190,7 @@ class SalesListSection extends StatelessWidget {
                     ],
                   ),
                 )
-              else
+              else ...[
                 ...items.map(
                   (sale) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -197,6 +200,12 @@ class SalesListSection extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (provider.isLoadingMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+              ],
               const SizedBox(height: 80),
             ],
           ),
