@@ -43,18 +43,11 @@ const Header = () => {
   const navItems = [
     { name: 'Beranda', href: '#hero' },
     { 
-      name: 'Tentang', 
-      href: '#about',
-      submenu: [
-        { name: 'Profil Sekolah', href: '#about' },
-        { name: 'Visi & Misi', href: '#info' },
-      ]
-    },
-    { 
       name: 'TEFA', 
       href: '#tefa',
       submenu: [
-        { name: 'Program TEFA', href: '#tefa' },
+        { name: 'Produk Pertanian', href: '/pertanian' },
+        { name: 'Produk Peternakan', href: '/peternakan' },
       ]
     },
     { name: 'Jurusan', href: '#jurusan' },
