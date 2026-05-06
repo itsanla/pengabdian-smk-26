@@ -11,7 +11,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -114,20 +114,20 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email Field */}
+              {/* Username Field */}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-white/80 mb-1.5">
-                  Email
+                <label htmlFor="username" className="block text-sm font-medium text-white/80 mb-1.5">
+                  Username
                 </label>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  id="username"
+                  name="username"
+                  type="text"
+                  autoComplete="username"
                   required
-                  value={formData.email}
+                  value={formData.username}
                   onChange={handleInputChange}
-                  placeholder="nama@email.com"
+                  placeholder="masukkan username"
                   disabled={isLoading}
                   className="w-full px-4 py-3 bg-white/10 border border-white/15 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all duration-200 backdrop-blur-sm disabled:opacity-50"
                 />
@@ -176,7 +176,7 @@ export default function LoginPage() {
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading || !formData.email || !formData.password}
+                disabled={isLoading || !formData.username || !formData.password}
                 className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-400 hover:to-green-500 text-white font-semibold py-3.5 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:ring-offset-2 focus:ring-offset-transparent"
               >
                 {isLoading ? (

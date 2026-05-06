@@ -7,7 +7,8 @@ export type Role = (typeof roleEnum)[number];
 export const usersTable = sqliteTable("User", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   nama: text("nama").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email"),
+  username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").notNull().$type<Role>(),
   print_preference: integer("print_preference").notNull().default(1),

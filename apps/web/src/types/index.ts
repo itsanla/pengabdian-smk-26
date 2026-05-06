@@ -3,7 +3,8 @@ export type RoleUser = "admin" | "guru" | "kepsek" | "siswa";
 export interface User {
   id: number;
   nama: string;
-  email: string;
+  email?: string | null;
+  username: string;
   password: string;
   role: RoleUser;
   createdAt: string;

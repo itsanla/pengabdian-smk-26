@@ -71,7 +71,8 @@ export default function UserPage() {
 
   const userFormFields = [
     { name: "nama", label: "Nama", type: "text" as const },
-    { name: "email", label: "Email", type: "text" as const },
+    { name: "username", label: "Username", type: "text" as const },
+    { name: "email", label: "Email (opsional)", type: "text" as const },
     {
       name: "password",
       label: modalMode === "update" ? "Password (optional)" : "Password",

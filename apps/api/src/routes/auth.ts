@@ -12,11 +12,12 @@ export const authApp = new Hono<{ Bindings: Env; Variables: Variables }>();
 
 authApp.post("/login", async (c) => {
   try {
-    const body = await c.req.json<{ email?: string; password?: string }>();
-    const { email, password } = body;
+    const body = await c.req.json<{ username?: string; password?: string }>();
+    const username = body.username?.trim();
+    const password = body.password;
 
     const v = new Validator();
-    v.required(email, "email");
+    v.required(username, "username");
     v.required(password, "password");
     if (v.hasErrors()) {
       return c.json(
@@ -29,7 +30,7 @@ authApp.post("/login", async (c) => {
     const user = await db
       .select()
       .from(usersTable)
-      .where(eq(usersTable.email, email!))
+      .where(eq(usersTable.username, username!))
       .get();
 
     const passwordOk = user
@@ -38,13 +39,19 @@ authApp.post("/login", async (c) => {
 
     if (!user || !passwordOk) {
       return c.json(
-        { success: false, message: "Login gagal, cek email dan password." },
+        { success: false, message: "Login gagal, cek username dan password." },
         400,
       );
     }
 
     const token = await generateToken(
-      { id: user.id, nama: user.nama, email: user.email, role: user.role },
+      {
+        id: user.id,
+        nama: user.nama,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
       c.env.JWT_SECRET,
     );
 

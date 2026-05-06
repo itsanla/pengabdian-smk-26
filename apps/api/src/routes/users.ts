@@ -45,14 +45,17 @@ usersApp.post("/", async (c) => {
   try {
     const body = await c.req.json<{
       email?: string;
+      username?: string;
       nama?: string;
       password?: string;
       role?: string;
     }>();
-    const { email, nama, password, role } = body;
+    const email = body.email?.trim() || undefined;
+    const username = body.username?.trim();
+    const { nama, password, role } = body;
 
     const v = new Validator();
-    v.required(email, "email");
+    v.required(username, "username");
     v.isEmail(email, "email");
     v.required(nama, "nama");
     v.required(password, "password");
@@ -72,6 +75,17 @@ usersApp.post("/", async (c) => {
       }
     }
 
+    if (username) {
+      const existingUsername = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.username, username))
+        .get();
+      if (existingUsername) {
+        v.check(false, "username", "Username sudah tersedia.");
+      }
+    }
+
     if (v.hasErrors()) {
       return c.json(
         { success: false, message: "Validasi gagal", errors: v.getErrors() },
@@ -83,7 +97,8 @@ usersApp.post("/", async (c) => {
     const [newUser] = await db
       .insert(usersTable)
       .values({
-        email: email!,
+        email,
+        username: username!,
         nama: nama!,
         password: hashed,
         role: role as (typeof roleEnum)[number],
@@ -105,14 +120,17 @@ usersApp.put("/:id", async (c) => {
     const id = Number(c.req.param("id"));
     const body = await c.req.json<{
       email?: string;
+      username?: string;
       nama?: string;
       password?: string;
       role?: string;
     }>();
-    const { email, nama, password, role } = body;
+    const email = body.email?.trim() || undefined;
+    const username = body.username?.trim();
+    const { nama, password, role } = body;
 
     const v = new Validator();
-    v.required(email, "email");
+    v.required(username, "username");
     v.isEmail(email, "email");
     v.required(nama, "nama");
     v.required(role, "role");
@@ -129,6 +147,15 @@ usersApp.put("/:id", async (c) => {
       if (existing) v.check(false, "email", "Email sudah tersedia.");
     }
 
+    if (username) {
+      const existingUsername = await db
+        .select()
+        .from(usersTable)
+        .where(and(eq(usersTable.username, username), ne(usersTable.id, id)))
+        .get();
+      if (existingUsername) v.check(false, "username", "Username sudah tersedia.");
+    }
+
     if (v.hasErrors()) {
       return c.json(
         { success: false, message: "Validasi gagal", errors: v.getErrors() },
@@ -138,6 +165,7 @@ usersApp.put("/:id", async (c) => {
 
     const update: Record<string, unknown> = {
       email,
+      username,
       nama,
       role,
       updatedAt: Math.floor(Date.now() / 1000),

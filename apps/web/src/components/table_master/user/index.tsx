@@ -14,6 +14,10 @@ export const createColumns = ({ onEdit, onDelete }: UserTableActionsProps): Colu
     header: "Nama"
   },
   {
+    accessorKey: "username",
+    header: "Username",
+  },
+  {
     accessorKey: "email",
     header: "Email",
   },

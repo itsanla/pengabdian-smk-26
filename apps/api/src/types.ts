@@ -13,7 +13,8 @@ export interface Env {
 export interface AuthUser {
   id: number;
   nama: string;
-  email: string;
+  email?: string | null;
+  username: string;
   role: Role;
 }
 

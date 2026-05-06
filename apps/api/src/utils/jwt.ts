@@ -23,6 +23,7 @@ export async function verifyToken(
       id: decoded.id,
       nama: decoded.nama,
       email: decoded.email,
+      username: decoded.username,
       role: decoded.role,
     };
   } catch {
