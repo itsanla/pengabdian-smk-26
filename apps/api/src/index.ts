@@ -42,22 +42,22 @@ api.route("/komoditas", komoditasApp);
 api.use("/users/*", jwtCheckToken, isRole(["admin"]));
 api.route("/users", usersApp);
 
-api.use("/jenis/*", jwtCheckToken, isRole(["admin", "guru"]));
+api.use("/jenis/*", jwtCheckToken, isRole(["admin", "guru", "kepsek"]));
 api.route("/jenis", jenisApp);
 
-api.use("/barang/*", jwtCheckToken, isRole(["admin", "guru"]));
+api.use("/barang/*", jwtCheckToken, isRole(["admin", "guru", "kepsek"]));
 api.route("/barang", barangApp);
 
-api.use("/transaksi-barang/*", jwtCheckToken, isRole(["admin", "guru"]));
+api.use("/transaksi-barang/*", jwtCheckToken, isRole(["admin", "guru", "kepsek"]));
 api.route("/transaksi-barang", transaksiBarangApp);
 
-api.use("/produksi/*", jwtCheckToken, isRole(["admin", "guru", "siswa"]));
+api.use("/produksi/*", jwtCheckToken, isRole(["admin", "guru", "siswa", "kepsek"]));
 api.route("/produksi", produksiApp);
 
-api.use("/penjualan/*", jwtCheckToken, isRole(["admin", "guru", "siswa"]));
+api.use("/penjualan/*", jwtCheckToken, isRole(["admin", "guru", "siswa", "kepsek"]));
 api.route("/penjualan", penjualanApp);
 
-api.use("/asal-produksi/*", jwtCheckToken, isRole(["admin", "guru"]));
+api.use("/asal-produksi/*", jwtCheckToken, isRole(["admin", "guru", "kepsek"]));
 api.route("/asal-produksi", asalProduksiApp);
 
 api.use("/user/preference/*", jwtCheckToken);
