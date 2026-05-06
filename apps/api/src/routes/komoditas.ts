@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { jenisTable, komoditasTable } from "../db/schema";
+import { jenisTable, komoditasTable, produksiTable } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
 import {
@@ -65,17 +65,28 @@ komoditasApp.get("/", async (c) => {
       .offset(offset)
       .all();
 
-    const data = rows.map((r) => convertTimestamps({
-      id: r.id,
-      id_jenis: r.id_jenis,
-      jenis: { name: r.jenisName },
-      nama: r.nama,
-      deskripsi: r.deskripsi,
-      foto: r.foto,
-      satuan: r.satuan,
-      jumlah: r.jumlah,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
+    const data = await Promise.all(rows.map(async (r) => {
+      const latestProduksi = await db
+        .select({ harga_persatuan: produksiTable.harga_persatuan })
+        .from(produksiTable)
+        .where(eq(produksiTable.id_komoditas, r.id))
+        .orderBy(desc(produksiTable.createdAt))
+        .limit(1)
+        .get();
+
+      return convertTimestamps({
+        id: r.id,
+        id_jenis: r.id_jenis,
+        jenis: { name: r.jenisName },
+        nama: r.nama,
+        deskripsi: r.deskripsi,
+        foto: r.foto,
+        satuan: r.satuan,
+        jumlah: r.jumlah,
+        harga_persatuan: latestProduksi?.harga_persatuan ?? 0,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+      });
     }));
 
     return c.json({

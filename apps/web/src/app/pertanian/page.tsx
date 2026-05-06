@@ -25,6 +25,7 @@ interface Komoditas {
   features?: string[];
   jumlah: number;
   satuan: string;
+  harga_persatuan?: number;
   jenis?: { name: string };
   updated_at: string;
   details?: KomoditasDetails;
@@ -39,6 +40,7 @@ interface KomoditasApiResponse {
   foto?: string;
   jumlah: number;
   satuan: string;
+  harga_persatuan?: number;
   jenis?: { name: string };
   updatedAt?: string;
 }
@@ -76,18 +78,19 @@ const KomoditasPage = () => {
           if (response && Array.isArray(response)) {
             // Process data to match our interface
             const processedData = (response as KomoditasApiResponse[]).map((item) => ({
-              id: String(item.id), // Convert number to string
+              id: String(item.id),
               nama: item.nama,
               deskripsi: item.deskripsi,
               foto: item.foto?.startsWith("http")
                 ? item.foto
-                : `/image/${item.foto}`, // Handle both Cloudinary and local paths
+                : `/image/${item.foto}`,
               jumlah: item.jumlah,
               satuan: item.satuan,
-              jenis: { name: item.jenis?.name || "Komoditas Premium" }, // Ensure consistent jenis structure
-              updated_at: item.updatedAt || new Date().toISOString(), // Map updatedAt to updated_at
+              harga_persatuan: item.harga_persatuan || 0,
+              jenis: { name: item.jenis?.name || "Produk Pertanian" },
+              updated_at: item.updatedAt || new Date().toISOString(),
               features: [
-                item.jenis?.name || "Komoditas Premium",
+                item.jenis?.name || "Produk Pertanian",
                 `Stok: ${item.jumlah} ${item.satuan}`,
               ],
             }));
@@ -197,10 +200,10 @@ const KomoditasPage = () => {
             className="max-w-4xl"
           >
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Katalog Komoditas <span className="text-emerald-300">TEFA</span>
+              Produk Pertanian <span className="text-emerald-300">TEFA</span>
             </h1>
             <p className="text-emerald-100 text-lg md:text-xl max-w-3xl mb-10">
-              Jelajahi berbagai komoditas hasil produksi Teaching Factory SMK
+              Jelajahi berbagai produk pertanian hasil produksi Teaching Factory SMK
               Negeri 2 Batusangkar dengan kualitas premium dan teknologi modern.
             </p>
 
@@ -212,7 +215,7 @@ const KomoditasPage = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder="Cari komoditas..."
+                  placeholder="Cari produk pertanian..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 pr-10 py-4 w-full bg-white/10 border border-emerald-600 rounded-lg text-white placeholder-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent shadow-md"
@@ -239,7 +242,7 @@ const KomoditasPage = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 text-emerald-600 animate-spin" />
               <p className="ml-3 text-emerald-800 text-lg">
-                Memuat data komoditas...
+                Memuat produk pertanian...
               </p>
             </div>
           ) : error ? (
@@ -255,7 +258,7 @@ const KomoditasPage = () => {
           ) : filteredKomoditas.length === 0 ? (
             <div className="text-center py-20">
               <p className="text-emerald-800 text-lg">
-                Tidak ada komoditas yang sesuai dengan pencarian Anda
+                Tidak ada produk pertanian yang sesuai dengan pencarian Anda
               </p>
               <button
                 className="mt-4 px-6 py-2 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 transition-colors"
@@ -270,7 +273,7 @@ const KomoditasPage = () => {
             <>
               <div className="mb-8">
                 <h2 className="text-2xl font-semibold text-emerald-800">
-                  {filteredKomoditas.length} Komoditas
+                  {filteredKomoditas.length} Produk Pertanian
                   {searchQuery ? ` untuk pencarian "${searchQuery}"` : ""}
                 </h2>
               </div>
@@ -319,14 +322,23 @@ const KomoditasPage = () => {
 
                       <div className="absolute top-4 left-4 z-10">
                         <span className="bg-white/80 backdrop-blur-sm text-emerald-800 text-xs font-semibold py-1 px-3 rounded-full">
-                          {item.jenis?.name || "Komoditas TEFA"}
+                          {item.jenis?.name || "Produk Pertanian"}
                         </span>
                       </div>
 
+                      {/* Price badge */}
+                      {item.harga_persatuan && item.harga_persatuan > 0 && (
+                        <div className="absolute top-4 right-4 z-10">
+                          <span className="bg-emerald-600/90 backdrop-blur-sm text-white text-xs font-semibold py-1 px-3 rounded-full">
+                            Rp {item.harga_persatuan.toLocaleString('id-ID')}/{item.satuan}
+                          </span>
+                        </div>
+                      )}
+
                       {/* Quantity badge */}
                       <div className="absolute bottom-4 right-4 z-10">
-                        <span className="bg-emerald-600/90 backdrop-blur-sm text-white text-xs font-semibold py-1 px-3 rounded-full">
-                          {item.jumlah} {item.satuan}
+                        <span className="bg-white/80 backdrop-blur-sm text-emerald-800 text-xs font-semibold py-1 px-3 rounded-full">
+                          Stok: {item.jumlah} {item.satuan}
                         </span>
                       </div>
 
@@ -429,7 +441,7 @@ const KomoditasPage = () => {
 
               <div className="absolute bottom-6 left-6 right-6">
                 <span className="bg-emerald-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full inline-block mb-3">
-                  {selectedKomoditas.jenis?.name || "Komoditas TEFA"}
+                  {selectedKomoditas.jenis?.name || "Produk Pertanian"}
                 </span>
                 <h2 className="text-3xl sm:text-4xl font-bold text-white">
                   {selectedKomoditas.nama}
@@ -452,7 +464,7 @@ const KomoditasPage = () => {
                 <div>
                   <div className="mb-6">
                     <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                      Informasi Komoditas
+                      Informasi Produk
                     </h3>
                     <div className="bg-emerald-50 p-4 rounded-lg">
                       <div className="flex justify-between py-2 border-b border-emerald-100">
@@ -461,8 +473,16 @@ const KomoditasPage = () => {
                           {selectedKomoditas.jenis?.name || "-"}
                         </span>
                       </div>
+                      {selectedKomoditas.harga_persatuan && selectedKomoditas.harga_persatuan > 0 && (
+                        <div className="flex justify-between py-2 border-b border-emerald-100">
+                          <span className="text-gray-600">Harga</span>
+                          <span className="font-medium text-emerald-800">
+                            Rp {selectedKomoditas.harga_persatuan.toLocaleString('id-ID')}/{selectedKomoditas.satuan}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex justify-between py-2 border-b border-emerald-100">
-                        <span className="text-gray-600">Kuantitas</span>
+                        <span className="text-gray-600">Stok Tersedia</span>
                         <span className="font-medium text-emerald-800">
                           {selectedKomoditas.jumlah} {selectedKomoditas.satuan}
                         </span>

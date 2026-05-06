@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ExternalLink, Github, Globe, Linkedin } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Tim Pengembang",
+  title: "Tim Pengembang - smk 2 batusangkar",
   description:
     "Informasi tim pengembang website SMK Negeri 2 Batusangkar dari fase pengembangan awal hingga pengembangan lanjutan, seo dikembangkan anla harpanda.",
   authors: [

@@ -520,7 +520,7 @@ const TefaHybrid = () => {
                         </button>
 
                         <Link
-                          href="/komoditas"
+                          href="/pertanian"
                           className="inline-flex items-center px-7 py-4 bg-white/20 hover:bg-white/30 transition-all text-white backdrop-blur-sm rounded-full font-medium group border border-white/30"
                         >
                           Selengkapnya
