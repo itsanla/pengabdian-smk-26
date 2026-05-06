@@ -5,7 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { Loader2, ImageIcon, ArrowLeft, Search, X } from "lucide-react";
+import { Loader2, ArrowLeft, Search, X } from "lucide-react";
+import PreviewCard from "@/components/shadcn-space/card/card-02";
 import { fetchAllPages } from "@/services/api.service";
 
 // Define TypeScript interfaces for data structure
@@ -282,106 +283,20 @@ const KomoditasPage = () => {
                 variants={containerVariants}
                 initial="hidden"
                 animate={inView ? "visible" : "hidden"}
-                className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+                className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
                 {filteredKomoditas.map((item, index) => (
-                  <motion.div
-                    key={index}
-                    variants={itemVariants}
-                    className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100"
-                  >
-                    <div className="h-64 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                      {item.foto ? (
-                        <Image
-                          src={
-                            item.foto.startsWith("http") ? item.foto : item.foto
-                          }
-                          alt={item.nama}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = "/image/placeholder.webp";
-                          }}
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-emerald-50 to-emerald-100">
-                          <div className="p-6 rounded-full bg-white/30 backdrop-blur-sm shadow-inner">
-                            <ImageIcon
-                              size={60}
-                              className="text-emerald-600 opacity-70"
-                            />
-                            <p className="mt-2 text-emerald-700 text-sm font-medium">
-                              Gambar Tidak Tersedia
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="absolute top-4 left-4 z-10">
-                        <span className="bg-white/80 backdrop-blur-sm text-emerald-800 text-xs font-semibold py-1 px-3 rounded-full">
-                          {item.jenis?.name || "Produk Pertanian"}
-                        </span>
-                      </div>
-
-                      {/* Price badge */}
-                      {item.harga_persatuan && item.harga_persatuan > 0 && (
-                        <div className="absolute top-4 right-4 z-10">
-                          <span className="bg-emerald-600/90 backdrop-blur-sm text-white text-xs font-semibold py-1 px-3 rounded-full">
-                            Rp {item.harga_persatuan.toLocaleString('id-ID')}/{item.satuan}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Quantity badge */}
-                      <div className="absolute bottom-4 right-4 z-10">
-                        <span className="bg-white/80 backdrop-blur-sm text-emerald-800 text-xs font-semibold py-1 px-3 rounded-full">
-                          Stok: {item.jumlah} {item.satuan}
-                        </span>
-                      </div>
-
-                      {/* View details button on hover */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-                        <button
-                          onClick={() => openKomoditasDetail(item)}
-                          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg transition-all transform hover:scale-105"
-                        >
-                          Lihat Detail
-                        </button>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-emerald-800 mb-2 group-hover:text-emerald-600 transition-colors">
-                        {item.nama}
-                      </h3>
-                      <p className="text-gray-600 mb-4 text-sm leading-relaxed line-clamp-3">
-                        {item.deskripsi ||
-                          "Informasi detail tentang komoditas ini akan segera hadir."}
-                      </p>
-
-                      <button
-                        onClick={() => openKomoditasDetail(item)}
-                        className="text-emerald-600 font-medium text-sm hover:text-emerald-800 transition-colors flex items-center"
-                      >
-                        Pelajari Lebih Lanjut
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 ml-1"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+                  <motion.div key={index} variants={itemVariants} onClick={() => openKomoditasDetail(item)} className="cursor-pointer [&_.flex:last-child>div]:flex-1">
+                    <PreviewCard
+                      foto={item.foto}
+                      nama={item.nama}
+                      jenis={item.jenis?.name || "Produk Pertanian"}
+                      deskripsi={item.deskripsi || ""}
+                      harga_persatuan={item.harga_persatuan || 0}
+                      satuan={item.satuan}
+                      jumlah={item.jumlah}
+                      updated_at={item.updated_at}
+                    />
                   </motion.div>
                 ))}
               </motion.div>
