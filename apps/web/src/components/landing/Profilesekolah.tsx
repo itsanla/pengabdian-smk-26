@@ -166,7 +166,7 @@ const ProfileSekolah = () => {
 
                   <div className="text-center">
                     <h3 className="text-xl font-bold text-emerald-800">
-                      Budi Dharmawan,S.Pd,.MT
+                      Veri Kurtis, S.Pd., M.Pd.T
                     </h3>
                     <p className="text-emerald-600 font-medium text-sm mb-4">
                       Kepala Sekolah
