@@ -48,10 +48,12 @@ authApp.post("/login", async (c) => {
       c.env.JWT_SECRET,
     );
 
+    const { password: _password, ...safeUser } = user;
+
     return c.json({
       success: true,
       message: "Login berhasil",
-      data: { token, user },
+      data: { token, user: safeUser },
     });
   } catch (error) {
     return handleAnyError(c, error);
