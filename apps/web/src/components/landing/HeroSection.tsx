@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Sprout, Leaf, ArrowDown } from 'lucide-react';
 import Image from 'next/image';
 import { HeroVideoDialog } from '@/components/ui/hero-video-dialog';
+import { HyperText } from "../ui/hyper-text"
+import { NumberTicker } from "../ui/number-ticker"
 
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -139,9 +141,9 @@ const HeroSection = () => {
               className="mt-10 flex flex-wrap gap-6 sm:gap-8"
             >
               {[
-                { value: '467', label: 'Siswa Aktif' },
-                { value: '5', label: 'Program Keahlian' },
-                { value: '11+', label: 'Mitra Industri' },
+                { value: <NumberTicker value={467} />, label: 'Siswa Aktif' },
+                { value: <NumberTicker value={5} />, label: 'Program Keahlian' },
+                { value: <><NumberTicker value={11} />+</>, label: 'Mitra Industri' },
               ].map((stat, i) => (
                 <div key={i} className="text-left">
                   <div className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</div>
@@ -157,7 +159,7 @@ const HeroSection = () => {
             transition={{ duration: 0.7, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="relative hidden lg:block"
           >
-            <div className="relative w-full aspect-square max-w-md mx-auto">
+            <div className="relative w-full aspect-video max-w-lg xl:max-w-xl mx-auto">
               {/* Glow ring */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400/15 to-emerald-600/15 blur-xl scale-110" />
                 <HeroVideoDialog
