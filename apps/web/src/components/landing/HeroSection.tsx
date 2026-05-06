@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Sprout, Leaf, ArrowDown } from 'lucide-react';
 import Image from 'next/image';
+import { HeroVideoDialog } from '@/components/ui/hero-video-dialog';
 
 const HeroSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -159,17 +160,13 @@ const HeroSection = () => {
             <div className="relative w-full aspect-square max-w-md mx-auto">
               {/* Glow ring */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400/15 to-emerald-600/15 blur-xl scale-110" />
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-400/20 to-emerald-600/20 backdrop-blur-md" />
-              <div className="absolute inset-4 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl">
-                <Image
-                  src="/image/fotosama.webp"
-                  alt="SMK Negeri 2 Batusangkar - Foto bersama siswa dan guru"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 0px, 400px"
-                  priority
+                <HeroVideoDialog
+                  className="block dark:hidden"
+                  animationStyle="top-in-bottom-out"
+                  videoSrc="https://www.youtube.com/embed/cy8gIXI6_c4?si=s276nKQnXcHD57d2"
+                  thumbnailSrc="/image/fotosama.webp"
+                  thumbnailAlt="Hero Video"
                 />
-              </div>
 
               {/* Floating badge */}
               <motion.div
