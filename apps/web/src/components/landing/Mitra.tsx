@@ -150,11 +150,11 @@ const mitraList = [
 		logo: '/image/mitra/medion.webp',
 		url: '#',
 	},
-	{
-		name: 'KARYA BERSAMA',
-		logo: '/image/placeholder.webp',
-		url: '#',
-	},
+	// {
+	// 	name: 'KARYA BERSAMA',
+	// 	logo: '/image/placeholder.webp',
+	// 	url: '#',
+	// },
 	{
 		name: 'DINAS PERTANIAN',
 		logo: '/image/mitra/dinaspertaniantanahdatar.webp',
