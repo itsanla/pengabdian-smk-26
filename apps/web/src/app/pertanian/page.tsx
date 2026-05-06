@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Loader2, ArrowLeft, Search, X } from "lucide-react";
 import PreviewCard from "@/components/shadcn-space/card/card-02";
+import Footer from "@/components/landing/Footer";
 import { fetchAllPages } from "@/services/api.service";
 
 // Define TypeScript interfaces for data structure
@@ -140,14 +141,37 @@ const KomoditasPage = () => {
   }, [searchQuery, komoditas]);
 
   // Modal functions
+  const sendLog = (action: string, extra?: object) => {
+    fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, scrollY: window.scrollY, bodyOverflow: document.body.style.overflow, ...extra }),
+    });
+  };
+
   const openKomoditasDetail = (item: Komoditas) => {
+    sendLog('OPEN', { item: item.nama, scrollBefore: window.scrollY });
+    const scrollY = window.scrollY;
     setSelectedKomoditas(item);
-    document.body.classList.add("overflow-hidden");
+    document.documentElement.style.scrollBehavior = 'auto';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    sendLog('OPEN_AFTER', { scrollAfter: window.scrollY, top: document.body.style.top });
   };
 
   const closeKomoditasDetail = () => {
+    sendLog('CLOSE_BEFORE', { scrollBefore: window.scrollY, top: document.body.style.top });
+    const scrollY = Math.abs(parseInt(document.body.style.top || '0'));
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    window.scrollTo(0, scrollY);
+    document.documentElement.style.scrollBehavior = '';
     setSelectedKomoditas(null);
-    document.body.classList.remove("overflow-hidden");
+    setTimeout(() => sendLog('CLOSE_AFTER', { scrollAfter: window.scrollY }), 100);
   };
 
   // Clear search function
@@ -176,6 +200,7 @@ const KomoditasPage = () => {
   };
 
   return (
+    <>
     <main className="min-h-screen bg-gradient-to-b from-emerald-50 to-white">
       {/* Header section */}
       <div className="bg-emerald-800 py-16 relative overflow-hidden">
@@ -306,221 +331,107 @@ const KomoditasPage = () => {
       </div>
 
       {/* DETAIL MODAL */}
-      {selectedKomoditas && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div
-            className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
+      <AnimatePresence>
+        {selectedKomoditas && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={closeKomoditasDetail}
           >
-            <div className="relative h-80 sm:h-96">
-              <Image
-                src={
-                  selectedKomoditas.foto
-                    ? selectedKomoditas.foto.startsWith("http")
-                      ? selectedKomoditas.foto
-                      : selectedKomoditas.foto
-                    : "/image/placeholder.webp"
-                }
-                alt={selectedKomoditas.nama}
-                fill
-                className="object-cover"
-                priority
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/image/placeholder.webp";
-                }}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-black/10"></div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Hero Image */}
+              <div className="relative h-64 sm:h-80 rounded-t-3xl overflow-hidden">
+                <Image
+                  src={selectedKomoditas.foto || "/image/placeholder.webp"}
+                  alt={selectedKomoditas.nama}
+                  fill
+                  className="object-cover"
+                  priority
+                  onError={(e) => { (e.target as HTMLImageElement).src = "/image/placeholder.webp"; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-              <div className="absolute top-4 right-4">
                 <button
                   onClick={closeKomoditasDetail}
-                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm p-2 rounded-full transition-colors"
+                  className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 backdrop-blur-md p-2 rounded-full transition-all"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-6 w-6 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X className="h-5 w-5 text-white" />
                 </button>
+
+                <div className="absolute bottom-5 left-6 right-6">
+                  <span className="bg-emerald-500/90 backdrop-blur-sm text-white text-xs font-semibold px-3 py-1 rounded-full">
+                    {selectedKomoditas.jenis?.name || "Produk Pertanian"}
+                  </span>
+                  <h2 className="mt-2 text-2xl sm:text-3xl font-bold text-white">
+                    {selectedKomoditas.nama}
+                  </h2>
+                </div>
               </div>
 
-              <div className="absolute bottom-6 left-6 right-6">
-                <span className="bg-emerald-500/90 text-white text-xs font-semibold px-3 py-1 rounded-full inline-block mb-3">
-                  {selectedKomoditas.jenis?.name || "Produk Pertanian"}
-                </span>
-                <h2 className="text-3xl sm:text-4xl font-bold text-white">
-                  {selectedKomoditas.nama}
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-6 sm:p-8">
-              <div className="mb-8">
-                <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                  Deskripsi
-                </h3>
-                <p className="text-gray-700">
-                  {selectedKomoditas.deskripsi ||
-                    "Informasi detail tentang komoditas ini akan segera hadir."}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <div className="mb-6">
-                    <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                      Informasi Produk
-                    </h3>
-                    <div className="bg-emerald-50 p-4 rounded-lg">
-                      <div className="flex justify-between py-2 border-b border-emerald-100">
-                        <span className="text-gray-600">Jenis</span>
-                        <span className="font-medium text-emerald-800">
-                          {selectedKomoditas.jenis?.name || "-"}
-                        </span>
-                      </div>
-                      {selectedKomoditas.harga_persatuan && selectedKomoditas.harga_persatuan > 0 && (
-                        <div className="flex justify-between py-2 border-b border-emerald-100">
-                          <span className="text-gray-600">Harga</span>
-                          <span className="font-medium text-emerald-800">
-                            Rp {selectedKomoditas.harga_persatuan.toLocaleString('id-ID')}/{selectedKomoditas.satuan}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex justify-between py-2 border-b border-emerald-100">
-                        <span className="text-gray-600">Stok Tersedia</span>
-                        <span className="font-medium text-emerald-800">
-                          {selectedKomoditas.jumlah} {selectedKomoditas.satuan}
-                        </span>
-                      </div>
-                      <div className="flex justify-between py-2">
-                        <span className="text-gray-600">
-                          Terakhir Diperbarui
-                        </span>
-                        <span className="font-medium text-emerald-800">
-                          {new Date(
-                            selectedKomoditas.updated_at
-                          ).toLocaleDateString("id-ID", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </span>
-                      </div>
-                    </div>
+              {/* Content */}
+              <div className="p-6">
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-3 mb-6">
+                  <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Harga</p>
+                    <p className="text-sm font-bold text-emerald-800">
+                      {selectedKomoditas.harga_persatuan && selectedKomoditas.harga_persatuan > 0
+                        ? `Rp ${selectedKomoditas.harga_persatuan.toLocaleString("id-ID")}`
+                        : "—"}
+                    </p>
+                    <p className="text-xs text-gray-400">per {selectedKomoditas.satuan}</p>
                   </div>
-
-                  {/* Additional details if available */}
-                  {selectedKomoditas.details?.brix && (
-                    <div className="mb-6">
-                      <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                        Brix (Tingkat Kemanisan)
-                      </h3>
-                      <div className="bg-emerald-50 p-4 rounded-lg">
-                        <p className="text-gray-700 font-medium">
-                          {selectedKomoditas.details.brix}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedKomoditas.details?.bentuk && (
-                    <div className="mb-6">
-                      <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                        Bentuk
-                      </h3>
-                      <div className="bg-emerald-50 p-4 rounded-lg">
-                        <p className="text-gray-700 font-medium">
-                          {selectedKomoditas.details.bentuk}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  {selectedKomoditas.details?.visual &&
-                    selectedKomoditas.details.visual.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                          Karakteristik Visual
-                        </h3>
-                        <div className="bg-emerald-50 p-4 rounded-lg">
-                          <ul className="space-y-2">
-                            {selectedKomoditas.details.visual.map(
-                              (item, idx) => (
-                                <li key={idx} className="flex items-start">
-                                  <div className="h-5 w-5 rounded-full bg-emerald-100 flex-shrink-0 flex items-center justify-center mt-1 mr-3">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                                  </div>
-                                  <span className="text-gray-700">{item}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-
-                  {selectedKomoditas.details?.keunggulan &&
-                    selectedKomoditas.details.keunggulan.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-xl font-semibold text-emerald-800 mb-3">
-                          Keunggulan
-                        </h3>
-                        <div className="bg-emerald-50 p-4 rounded-lg">
-                          <ul className="space-y-2">
-                            {selectedKomoditas.details.keunggulan.map(
-                              (item, idx) => (
-                                <li key={idx} className="flex items-start">
-                                  <div className="h-5 w-5 rounded-full bg-emerald-100 flex-shrink-0 flex items-center justify-center mt-1 mr-3">
-                                    <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
-                                  </div>
-                                  <span className="text-gray-700">{item}</span>
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                </div>
-              </div>
-
-              <div className="mt-8 pt-6 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <div>
-                    <span className="text-sm text-gray-500">
-                      Bagian dari program TEFA
-                    </span>
-                    <p className="text-emerald-800 font-medium">
-                      SMK 2 NEGERI BATUSANGKAR
+                  <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Stok</p>
+                    <p className="text-sm font-bold text-emerald-800">{selectedKomoditas.jumlah}</p>
+                    <p className="text-xs text-gray-400">{selectedKomoditas.satuan}</p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Diperbarui</p>
+                    <p className="text-sm font-bold text-emerald-800">
+                      {new Date(selectedKomoditas.updated_at).toLocaleDateString("id-ID", { month: "short", year: "numeric" })}
                     </p>
                   </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={closeKomoditasDetail}
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all"
-                    >
-                      Tutup
-                    </button>
+                </div>
+
+                {/* Deskripsi */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Deskripsi</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedKomoditas.deskripsi || "Informasi detail akan segera hadir."}
+                  </p>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <div>
+                    <p className="text-xs text-gray-400">Bagian dari program TEFA</p>
+                    <p className="text-sm font-semibold text-emerald-700">SMKN 2 Batusangkar</p>
                   </div>
+                  <button
+                    onClick={closeKomoditasDetail}
+                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition-colors"
+                  >
+                    Tutup
+                  </button>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
+    <Footer />
+    </>
   );
 };
 
