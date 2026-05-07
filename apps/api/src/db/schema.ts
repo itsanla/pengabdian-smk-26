@@ -219,6 +219,20 @@ export const transaksiBarangRelations = relations(
   }),
 );
 
+export const bahanBakuTable = sqliteTable("BahanBaku", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  nama: text("nama").notNull(),
+  satuan: text("satuan").notNull(),
+  jumlah: integer("jumlah").notNull().default(0),
+  isDeleted: integer("isDeleted").notNull().default(0),
+  createdAt: integer("createdAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updatedAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 export type User = typeof usersTable.$inferSelect;
 export type Jenis = typeof jenisTable.$inferSelect;
 export type Komoditas = typeof komoditasTable.$inferSelect;
@@ -227,3 +241,4 @@ export type Produksi = typeof produksiTable.$inferSelect;
 export type Penjualan = typeof penjualanTable.$inferSelect;
 export type Barang = typeof barangTable.$inferSelect;
 export type TransaksiBarang = typeof transaksiBarangTable.$inferSelect;
+export type BahanBaku = typeof bahanBakuTable.$inferSelect;

@@ -105,3 +105,12 @@ export interface TransaksiBarang {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface BahanBaku {
+  id: number;
+  nama: string;
+  satuan: string;
+  jumlah: number;
+  createdAt: string;
+  updatedAt: string;
+}

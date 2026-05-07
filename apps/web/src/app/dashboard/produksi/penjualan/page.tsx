@@ -18,7 +18,7 @@ export default function JenisKomoditasPage() {
                         </div>
                         <div className="flex flex-wrap gap-3">
                             <a
-                                href="https://github.com/itsanla/tefa-26/releases/download/v.1.0.0/app-release.apk"
+                                href="https://github.com/itsanla/tefa-26/releases/download/v1.0.2/app-release.apk"
                                 className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-emerald-700"
                                 rel="noopener noreferrer"
                                 target="_blank"
