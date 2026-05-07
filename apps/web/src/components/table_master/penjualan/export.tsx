@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import * as XLSX from "xlsx-js-style";
+import { apiRequest } from "@/services/api.service";
 
 interface ExportPenjualanModalProps {
   penjualanList: any[];
@@ -25,7 +26,6 @@ export default function ExportPenjualanModal({
   const getMonthKey = (value: string | number | Date) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return null;
-
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     return `${year}-${month}`;
@@ -45,86 +45,113 @@ export default function ExportPenjualanModal({
       .map((value) => {
         const [year, month] = value.split("-").map(Number);
         const date = new Date(year, month - 1, 1);
-        return {
-          value,
-          label: monthFormatter.format(date),
-        };
+        return { value, label: monthFormatter.format(date) };
       });
   }, [penjualanList, monthFormatter]);
 
   useEffect(() => {
     if (!isOpen) return;
-
     if (monthOptions.length === 0) {
       setSelectedMonth("");
       return;
     }
-
-    const isValidSelection = monthOptions.some(
-      (month) => month.value === selectedMonth,
-    );
-    if (!isValidSelection) {
-      setSelectedMonth(monthOptions[0].value);
-    }
+    const isValidSelection = monthOptions.some((m) => m.value === selectedMonth);
+    if (!isValidSelection) setSelectedMonth(monthOptions[0].value);
   }, [isOpen, monthOptions, selectedMonth]);
 
   if (!isOpen) return null;
 
+  // Fetch semua data penjualan (semua halaman) dari API
+  const fetchAllPenjualan = async (): Promise<any[]> => {
+    const allData: any[] = [];
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await apiRequest({
+        endpoint: `/penjualan?pageSize=100&page=${page}`,
+        returnFullResponse: true,
+      });
+
+      if (response?.data && Array.isArray(response.data)) {
+        allData.push(...response.data);
+        totalPages = response.meta?.totalPages ?? 1;
+      } else {
+        break;
+      }
+      page++;
+    } while (page <= totalPages);
+
+    return allData;
+  };
+
   const handleExport = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    console.log("Selected Month:", selectedMonth);
 
     if (!selectedMonth) {
       alert("Silakan pilih bulan terlebih dahulu.");
       return;
     }
 
-    if (!Array.isArray(penjualanList)) {
-      alert("Data penjualan tidak tersedia.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const filteredData = penjualanList.filter(
+      const allData = await fetchAllPenjualan();
+      const filteredData = allData.filter(
         (item) => getMonthKey(item.createdAt) === selectedMonth,
       );
 
       if (filteredData.length === 0) {
         alert("Tidak ada data penjualan pada bulan ini.");
-        setLoading(false);
         return;
       }
+
+      const totalHarga = filteredData.reduce(
+        (sum, item) => sum + (item?.total_harga ?? 0),
+        0,
+      );
+      const totalBerat = filteredData.reduce(
+        (sum, item) => sum + (item?.total_berat_kg ?? 0),
+        0,
+      );
 
       const excelData = filteredData.map((item, index) => ({
         No: index + 1,
         Tanggal: new Date(item.createdAt).toLocaleDateString("id-ID"),
-        Bulan: new Date(item.createdAt).toLocaleString("default", {
-          month: "short",
-        }),
+        Bulan: new Date(item.createdAt).toLocaleString("default", { month: "short" }),
         "Jumlah Produk": item?.jumlah_produk ?? item?.items?.length ?? 0,
         "Kode Produksi":
-          Array.isArray(item?.kode_produksi_list) &&
-          item.kode_produksi_list.length > 0
+          Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
             ? item.kode_produksi_list.join(", ")
             : "-",
         "Total Harga": item?.total_harga ?? 0,
+        "Berat (kg)": item?.total_berat_kg ?? 0,
         Keterangan: item?.keterangan || "-",
       }));
 
+      // Baris total di akhir
+      excelData.push({
+        No: "" as any,
+        Tanggal: "",
+        Bulan: "",
+        "Jumlah Produk": "" as any,
+        "Kode Produksi": "TOTAL",
+        "Total Harga": totalHarga,
+        "Berat (kg)": totalBerat,
+        Keterangan: "",
+      });
+
       const worksheet = XLSX.utils.json_to_sheet(excelData);
       const range = XLSX.utils.decode_range(worksheet["!ref"]!);
+      const totalRowIndex = range.e.r; // indeks baris terakhir (baris total)
 
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
-          const cell_address = { r: R, c: C };
-          const cell_ref = XLSX.utils.encode_cell(cell_address);
-
+          const cell_ref = XLSX.utils.encode_cell({ r: R, c: C });
           if (!worksheet[cell_ref]) continue;
 
           const isHeader = R === 0;
+          const isTotalRow = R === totalRowIndex;
           const isNoColumn = C === 0;
 
           worksheet[cell_ref].s = {
@@ -136,21 +163,23 @@ export default function ExportPenjualanModal({
             },
             alignment: {
               vertical: "center",
-              horizontal: isHeader || isNoColumn ? "center" : "left", // center hanya untuk header & kolom No
+              horizontal: isHeader || isNoColumn || isTotalRow ? "center" : "left",
               wrapText: true,
             },
-            fill: isHeader ? { fgColor: { rgb: "4C9900" } } : undefined,
+            fill:
+              isHeader || isTotalRow
+                ? { fgColor: { rgb: "4C9900" } }
+                : undefined,
             font: {
               name: "Arial",
               sz: 11,
-              bold: isHeader,
-              color: { rgb: "000000" }, // font header hitam
+              bold: isHeader || isTotalRow,
+              color: { rgb: isHeader || isTotalRow ? "FFFFFF" : "000000" },
             },
           };
         }
       }
 
-      // Mengatur lebar kolom otomatis
       const colWidths = (
         Object.keys(excelData[0]) as (keyof (typeof excelData)[0])[]
       ).map((key) => {
@@ -165,7 +194,6 @@ export default function ExportPenjualanModal({
 
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Penjualan");
-
       XLSX.writeFile(workbook, `Laporan-Penjualan-${selectedMonth}.xlsx`);
       onClose();
     } catch (err) {
@@ -182,55 +210,72 @@ export default function ExportPenjualanModal({
       return;
     }
 
-    if (!Array.isArray(penjualanList)) {
-      alert("Data penjualan tidak tersedia.");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const filteredData = penjualanList.filter(
+      const allData = await fetchAllPenjualan();
+      const filteredData = allData.filter(
         (item) => getMonthKey(item.createdAt) === selectedMonth,
       );
 
       if (filteredData.length === 0) {
         alert("Tidak ada data penjualan pada bulan ini.");
-        setLoading(false);
         return;
       }
+
+      const fmt = (n: number) =>
+        `Rp${new Intl.NumberFormat("id-ID").format(n)},-`;
+
+      const totalHarga = filteredData.reduce(
+        (sum, item) => sum + (item?.total_harga ?? 0),
+        0,
+      );
+      const totalBerat = filteredData.reduce(
+        (sum, item) => sum + (item?.total_berat_kg ?? 0),
+        0,
+      );
 
       const pdfData = filteredData.map((item, index) => [
         index + 1,
         new Date(item.createdAt).toLocaleDateString("id-ID"),
         new Date(item.createdAt).toLocaleString("default", { month: "short" }),
         item?.jumlah_produk ?? item?.items?.length ?? 0,
-        Array.isArray(item?.kode_produksi_list) &&
-        item.kode_produksi_list.length > 0
+        Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
           ? item.kode_produksi_list.join(", ")
           : "-",
-        item?.total_harga ?? 0,
+        fmt(item?.total_harga ?? 0),
+        `${item?.total_berat_kg ?? 0} kg`,
         item?.keterangan || "-",
       ]);
 
-      const doc = new (await import("jspdf")).jsPDF({
-        orientation: "landscape",
-      });
+      const doc = new (await import("jspdf")).jsPDF({ orientation: "landscape" });
       const autoTable = (await import("jspdf-autotable")).default;
+
+      const [year, month] = selectedMonth.split("-").map(Number);
+      const bulanLabel = monthFormatter.format(new Date(year, month - 1, 1));
+
+      // Judul laporan
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.text(`Laporan Penjualan - ${bulanLabel}`, 14, 14);
 
       autoTable(doc, {
         head: [
-          [
-            "No",
-            "Tanggal",
-            "Bulan",
-            "Jumlah Produk",
-            "Kode Produksi",
-            "Total Harga",
-            "Keterangan",
-          ],
+          ["No", "Tanggal", "Bulan", "Jumlah Produk", "Kode Produksi", "Total Harga", "Berat (kg)", "Keterangan"],
         ],
         body: pdfData,
+        foot: [
+          [
+            "",
+            "",
+            "",
+            "",
+            "TOTAL",
+            fmt(totalHarga),
+            `${totalBerat} kg`,
+            "",
+          ],
+        ],
         styles: {
           font: "helvetica",
           fontSize: 8,
@@ -239,16 +284,25 @@ export default function ExportPenjualanModal({
           valign: "middle",
         },
         headStyles: {
-          fillColor: [76, 153, 0], // rgb dari #4C9900
+          fillColor: [76, 153, 0],
+          textColor: 255,
+          fontStyle: "bold",
+          halign: "center",
+        },
+        footStyles: {
+          fillColor: [76, 153, 0],
           textColor: 255,
           fontStyle: "bold",
           halign: "center",
         },
         columnStyles: {
-          0: { halign: "center" }, // kolom No rata tengah
+          0: { halign: "center", cellWidth: 10 },
+          5: { halign: "right" },
+          6: { halign: "center" },
         },
         theme: "grid",
-        margin: { top: 20 },
+        margin: { top: 22 },
+        showFoot: "lastPage",
       });
 
       doc.save(`Laporan-Penjualan-${selectedMonth}.pdf`);

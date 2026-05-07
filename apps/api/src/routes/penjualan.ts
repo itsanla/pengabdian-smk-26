@@ -203,6 +203,7 @@ type PenjualanListItem = {
   id: number;
   id_penjualan: number;
   id_produksi: number;
+  jumlah_terjual: number;
 };
 
 type PenjualanListProduksi = {
@@ -329,6 +330,7 @@ async function loadPenjualanListRows(
       id: penjualanItemTabel.id,
       id_penjualan: penjualanItemTabel.id_penjualan,
       id_produksi: penjualanItemTabel.id_produksi,
+      jumlah_terjual: penjualanItemTabel.jumlah_terjual,
     })
     .from(penjualanItemTabel)
     .where(inArray(penjualanItemTabel.id_penjualan, pagedHeaderIds))
@@ -370,10 +372,16 @@ async function loadPenjualanListRows(
       .map((item) => produksiMap.get(item.id_produksi))
       .filter((kode): kode is string => Boolean(kode));
 
+    const total_berat_kg = relatedItems.reduce(
+      (sum, item) => sum + item.jumlah_terjual,
+      0,
+    );
+
     return convertTimestamps({
       ...header,
       jumlah_produk: relatedItems.length,
       kode_produksi_list: kodeProduksiList,
+      total_berat_kg,
     });
   });
 }
