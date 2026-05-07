@@ -104,14 +104,24 @@ export default function InputBahanBaku({ selectedItem, setSelectedItem, onSucces
           <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Satuan
           </label>
-          <input
-            type="text"
+          <select
             value={satuan}
             onChange={(e) => setSatuan(e.target.value)}
             className="rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="kg / liter / pcs"
             required
-          />
+          >
+            <option value="">-- Pilih Satuan --</option>
+            <option value="kg">kg</option>
+            <option value="gram">gram</option>
+            <option value="liter">liter</option>
+            <option value="ml">ml</option>
+            <option value="pcs">pcs</option>
+            <option value="lusin">lusin</option>
+            <option value="karung">karung</option>
+            <option value="botol">botol</option>
+            <option value="buah">buah</option>
+            <option value="meter">meter</option>
+          </select>
           {errors.satuan && <p className="text-red-500 text-xs">{errors.satuan}</p>}
         </div>
 
