@@ -440,19 +440,32 @@ export default function Penjualan() {
                               {detailItem.produksi?.kualitas ?? "-"}
                             </p>
                           </div>
-                          <span
-                            style={{
-                              background: "#EFF6FF",
-                              color: "#2563EB",
-                              borderRadius: 20,
-                              padding: "3px 10px",
-                              fontSize: 12,
-                              fontWeight: 600,
-                              flexShrink: 0,
-                            }}
-                          >
-                            {detailItem.jumlah_terjual} pcs
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                            <span
+                              style={{
+                                background: "#EFF6FF",
+                                color: "#2563EB",
+                                borderRadius: 20,
+                                padding: "3px 10px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {detailItem.jumlah_terjual} buah
+                            </span>
+                            <span
+                              style={{
+                                background: "#F0FDF4",
+                                color: "#16A34A",
+                                borderRadius: 20,
+                                padding: "3px 10px",
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {detailItem.berat ?? 0} kg
+                            </span>
+                          </div>
                         </div>
                         <div
                           style={{
@@ -468,7 +481,7 @@ export default function Penjualan() {
                             {new Intl.NumberFormat("id-ID").format(
                               detailItem.harga_satuan,
                             )}
-                            ,-
+                            ,-/kg
                           </span>
                           <span style={{ fontWeight: 600, color: "#111827" }}>
                             Subtotal Rp

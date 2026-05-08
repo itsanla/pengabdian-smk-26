@@ -114,6 +114,7 @@ async function loadPenjualanDetail(
       id_komodity: penjualanItemTabel.id_komodity,
       id_produksi: penjualanItemTabel.id_produksi,
       jumlah_terjual: penjualanItemTabel.jumlah_terjual,
+      berat: penjualanItemTabel.berat,
       harga_satuan: penjualanItemTabel.harga_satuan,
       sub_total: penjualanItemTabel.sub_total,
     })
@@ -204,6 +205,7 @@ type PenjualanListItem = {
   id_penjualan: number;
   id_produksi: number;
   jumlah_terjual: number;
+  berat: number;
 };
 
 type PenjualanListProduksi = {
@@ -331,6 +333,7 @@ async function loadPenjualanListRows(
       id_penjualan: penjualanItemTabel.id_penjualan,
       id_produksi: penjualanItemTabel.id_produksi,
       jumlah_terjual: penjualanItemTabel.jumlah_terjual,
+      berat: penjualanItemTabel.berat,
     })
     .from(penjualanItemTabel)
     .where(inArray(penjualanItemTabel.id_penjualan, pagedHeaderIds))
@@ -373,7 +376,7 @@ async function loadPenjualanListRows(
       .filter((kode): kode is string => Boolean(kode));
 
     const total_berat_kg = relatedItems.reduce(
-      (sum, item) => sum + item.jumlah_terjual,
+      (sum, item) => sum + item.berat,
       0,
     );
 
@@ -455,6 +458,7 @@ penjualanApp.post("/", async (c) => {
         id_komodity?: number | string;
         id_produksi?: number | string;
         jumlah_terjual?: number | string;
+        berat?: number | string;
       }>;
     }>();
 
@@ -497,13 +501,23 @@ penjualanApp.post("/", async (c) => {
       v.required(
         item.jumlah_terjual,
         `items.${index}.jumlah_terjual`,
-        "Jumlah terjual harus diisi.",
+        "Jumlah buah harus diisi.",
       );
       v.isIntGt(
         item.jumlah_terjual,
         0,
         `items.${index}.jumlah_terjual`,
-        "Jumlah terjual harus berupa angka.",
+        "Jumlah buah harus berupa angka bulat lebih dari 0.",
+      );
+      v.required(
+        item.berat,
+        `items.${index}.berat`,
+        "Berat harus diisi.",
+      );
+      v.check(
+        !isNaN(Number(item.berat)) && Number(item.berat) > 0,
+        `items.${index}.berat`,
+        "Berat harus berupa angka lebih dari 0.",
       );
     });
 
@@ -521,6 +535,7 @@ penjualanApp.post("/", async (c) => {
       id_komodity: number;
       id_produksi: number;
       jumlah_terjual: number;
+      berat: number;
       harga_satuan: number;
       sub_total: number;
       keterangan: string;
@@ -532,6 +547,7 @@ penjualanApp.post("/", async (c) => {
       const id_komodity = Number(item.id_komodity);
       const id_produksi = Number(item.id_produksi);
       const jumlah_terjual = Number(item.jumlah_terjual);
+      const berat = Number(item.berat);
       const keterangan = item.keterangan ?? "";
 
       const komoditas = await db
@@ -555,12 +571,14 @@ penjualanApp.post("/", async (c) => {
       }
 
       const harga_satuan = produksi.harga_persatuan;
-      const sub_total = harga_satuan * jumlah_terjual;
+      // sub_total dihitung berdasarkan berat, bukan jumlah buah
+      const sub_total = Math.round(harga_satuan * berat);
 
       resolvedItems.push({
         id_komodity,
         id_produksi,
         jumlah_terjual,
+        berat,
         harga_satuan,
         sub_total,
         keterangan,
@@ -628,6 +646,7 @@ penjualanApp.post("/", async (c) => {
             id_komodity: item.id_komodity,
             id_produksi: item.id_produksi,
             jumlah_terjual: item.jumlah_terjual,
+            berat: item.berat,
             harga_satuan: item.harga_satuan,
             sub_total: item.sub_total,
             createdAt: now,
@@ -674,6 +693,7 @@ penjualanApp.post("/", async (c) => {
             id_komodity: item.id_komodity,
             id_produksi: item.id_produksi,
             jumlah_terjual: item.jumlah_terjual,
+            berat: item.berat,
             harga_satuan: item.harga_satuan,
             sub_total: item.sub_total,
             keterangan: item.keterangan,

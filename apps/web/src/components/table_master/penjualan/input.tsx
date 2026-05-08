@@ -10,6 +10,7 @@ type PenjualanFormItem = {
   id_komodity: number;
   id_produksi: number;
   jumlah_terjual: number;
+  berat: number;
   total_harga: number;
   keterangan: string;
 };
@@ -18,6 +19,7 @@ const createEmptyItem = (): PenjualanFormItem => ({
   id_komodity: 0,
   id_produksi: 0,
   jumlah_terjual: 0,
+  berat: 0,
   total_harga: 0,
   keterangan: "",
 });
@@ -114,6 +116,7 @@ export default function InputPenjualanForm({
             id_komodity: Number(item.id_komodity) || 0,
             id_produksi: Number(item.id_produksi) || 0,
             jumlah_terjual: Number(item.jumlah_terjual) || 0,
+            berat: Number(item.berat) || 0,
             total_harga: Number(item.sub_total ?? 0),
             keterangan: "",
           }))
@@ -196,6 +199,7 @@ export default function InputPenjualanForm({
         "id_komodity",
         "id_produksi",
         "jumlah_terjual",
+        "berat",
       ];
 
       if (numberFields.includes(field)) {
@@ -208,6 +212,7 @@ export default function InputPenjualanForm({
       if (field === "id_komodity") {
         current.id_produksi = 0;
         current.jumlah_terjual = 0;
+        current.berat = 0;
         current.total_harga = 0;
       }
 
@@ -221,9 +226,10 @@ export default function InputPenjualanForm({
       const selectedProduksi = produksiList.find(
         (p) => Number(p.id) === current.id_produksi,
       );
-      if (selectedProduksi && current.jumlah_terjual > 0) {
+      // harga ditentukan oleh berat, bukan jumlah buah
+      if (selectedProduksi && current.berat > 0) {
         current.total_harga =
-          Number(selectedProduksi.harga_persatuan) * current.jumlah_terjual;
+          Number(selectedProduksi.harga_persatuan) * current.berat;
       } else {
         current.total_harga = 0;
       }
@@ -269,7 +275,10 @@ export default function InputPenjualanForm({
         errors[`${index}.id_produksi`] = "Produksi harus dipilih";
       }
       if (!item.jumlah_terjual || item.jumlah_terjual <= 0) {
-        errors[`${index}.jumlah_terjual`] = "Jumlah harus lebih dari 0";
+        errors[`${index}.jumlah_terjual`] = "Jumlah buah harus lebih dari 0";
+      }
+      if (!item.berat || item.berat <= 0) {
+        errors[`${index}.berat`] = "Berat harus lebih dari 0";
       }
 
       if (item.id_produksi && item.jumlah_terjual) {
@@ -278,7 +287,7 @@ export default function InputPenjualanForm({
         );
         if (selected && item.jumlah_terjual > Number(selected.jumlah)) {
           errors[`${index}.jumlah_terjual`] =
-            `Stok tidak mencukupi. Tersedia: ${selected.jumlah}`;
+            `Stok tidak mencukupi. Tersedia: ${selected.jumlah} buah`;
         }
       }
     });
@@ -303,6 +312,7 @@ export default function InputPenjualanForm({
         id_komodity: item.id_komodity,
         id_produksi: item.id_produksi,
         jumlah_terjual: item.jumlah_terjual,
+        berat: item.berat,
         total_harga: item.total_harga,
         keterangan: item.keterangan,
       })),
@@ -340,6 +350,7 @@ export default function InputPenjualanForm({
               asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
               hargaPersatuan: selectedProd.harga_persatuan,
               jumlahTerjual: item.jumlah_terjual,
+              berat: item.berat,
               totalHarga: item.total_harga,
             };
           })
@@ -462,10 +473,11 @@ export default function InputPenjualanForm({
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm">Jumlah Terjual</label>
+                    <label className="mb-1 block text-sm">Jumlah Buah</label>
                     <input
                       type="number"
                       min={1}
+                      step={1}
                       value={item.jumlah_terjual || ""}
                       onChange={(e) =>
                         handleItemChange(
@@ -475,6 +487,7 @@ export default function InputPenjualanForm({
                         )
                       }
                       className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      placeholder="0 buah"
                       required
                     />
                     {formErrors[`${index}.jumlah_terjual`] ? (
@@ -485,6 +498,27 @@ export default function InputPenjualanForm({
                   </div>
 
                   <div>
+                    <label className="mb-1 block text-sm">Berat (kg)</label>
+                    <input
+                      type="number"
+                      min={0.01}
+                      step={0.01}
+                      value={item.berat || ""}
+                      onChange={(e) =>
+                        handleItemChange(index, "berat", e.target.value)
+                      }
+                      className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      placeholder="0.00 kg"
+                      required
+                    />
+                    {formErrors[`${index}.berat`] ? (
+                      <p className="mt-1 text-xs text-red-600">
+                        {formErrors[`${index}.berat`]}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="md:col-span-2">
                     <label className="mb-1 block text-sm">Subtotal</label>
                     <div className="rounded border bg-gray-50 px-2 py-2 text-sm dark:border-gray-600 dark:bg-gray-800">
                       Rp
@@ -492,6 +526,17 @@ export default function InputPenjualanForm({
                         item.total_harga || 0,
                       )}
                       ,-
+                      {item.berat > 0 && item.id_produksi ? (
+                        <span className="ml-2 text-gray-500">
+                          ({item.berat} kg × Rp
+                          {new Intl.NumberFormat("id-ID").format(
+                            produksiList.find(
+                              (p) => Number(p.id) === item.id_produksi,
+                            )?.harga_persatuan ?? 0,
+                          )}
+                          /kg)
+                        </span>
+                      ) : null}
                     </div>
                   </div>
                 </div>

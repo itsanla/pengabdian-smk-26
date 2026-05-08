@@ -7,6 +7,7 @@ export interface StrukItemData {
   asalProduksi: string;
   hargaPersatuan: number;
   jumlahTerjual: number;
+  berat: number;
   totalHarga: number;
 }
 
@@ -19,9 +20,11 @@ type LegacyStrukItem = {
   asalProduksi?: string;
   hargaPersatuan?: number;
   jumlahTerjual?: number;
+  berat?: number;
   totalHarga?: number;
   harga_satuan?: number;
   sub_total?: number;
+  jumlah_terjual?: number;
   komoditas?: {
     nama?: string;
     satuan?: string;
@@ -81,7 +84,8 @@ function normalizeItem(item: LegacyStrukItem): StrukItemData {
     asalProduksi:
       item.asalProduksi ?? item.produksi?.asal_produksi?.nama ?? "-",
     hargaPersatuan: item.hargaPersatuan ?? item.harga_satuan ?? 0,
-    jumlahTerjual: item.jumlahTerjual ?? 0,
+    jumlahTerjual: item.jumlahTerjual ?? item.jumlah_terjual ?? 0,
+    berat: item.berat ?? 0,
     totalHarga: item.totalHarga ?? item.sub_total ?? 0,
   };
 }
@@ -99,11 +103,12 @@ export function printStruk(data: StrukData): void {
     ${items.length > 1 ? `<div class="item-title">Item ${index + 1}</div>` : ""}
     <div class="row"><span class="label">Komoditas</span><span class="value">${esc(item.namaKomoditas)}</span></div>
     <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(item.asalProduksi)}</span></div>
-    <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(item.kodeProduksi)}</span></div>
+    <div class="row"><span class="label">Kode Prod.</span><span class="value">${esc(item.kodeProduksi)}</span></div>
     <div class="row"><span class="label">Ukuran</span><span class="value">${esc(item.ukuran)}</span></div>
     <div class="row"><span class="label">Kualitas</span><span class="value">${esc(item.kualitas)}</span></div>
-    <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(item.hargaPersatuan)}</span></div>
-    <div class="row"><span class="label">Jumlah</span><span class="value">${item.jumlahTerjual} ${esc(item.satuanKomoditas)}</span></div>
+    <div class="row"><span class="label">Harga/kg</span><span class="value">${formatRupiah(item.hargaPersatuan)}</span></div>
+    <div class="row"><span class="label">Jumlah Buah</span><span class="value">${item.jumlahTerjual} buah</span></div>
+    <div class="row"><span class="label">Berat</span><span class="value">${item.berat} kg</span></div>
     <div class="row"><span class="label">Subtotal</span><span class="value">${formatRupiah(item.totalHarga)}</span></div>
   </div>`;
 
@@ -175,14 +180,15 @@ export function printStruk(data: StrukData): void {
       : `
       <div class="row"><span class="label">Komoditas</span><span class="value">${esc(singleItem.namaKomoditas)}</span></div>
       <div class="row"><span class="label">Asal Produksi</span><span class="value">${esc(singleItem.asalProduksi)}</span></div>
-      <div class="row"><span class="label">Kode Produksi</span><span class="value">${esc(singleItem.kodeProduksi)}</span></div>
+      <div class="row"><span class="label">Kode Prod.</span><span class="value">${esc(singleItem.kodeProduksi)}</span></div>
       <div class="row"><span class="label">Ukuran</span><span class="value">${esc(singleItem.ukuran)}</span></div>
       <div class="row"><span class="label">Kualitas</span><span class="value">${esc(singleItem.kualitas)}</span></div>
 
       <div class="divider"></div>
 
-      <div class="row"><span class="label">Harga/Satuan</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
-      <div class="row"><span class="label">Jumlah</span><span class="value">${singleItem.jumlahTerjual} ${esc(singleItem.satuanKomoditas)}</span></div>
+      <div class="row"><span class="label">Harga/kg</span><span class="value">${formatRupiah(singleItem.hargaPersatuan)}</span></div>
+      <div class="row"><span class="label">Jumlah Buah</span><span class="value">${singleItem.jumlahTerjual} buah</span></div>
+      <div class="row"><span class="label">Berat</span><span class="value">${singleItem.berat} kg</span></div>
     `
     }
 

@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { relations, sql } from "drizzle-orm";
 
 export const roleEnum = ["admin", "guru", "kepsek", "siswa"] as const;
@@ -107,6 +107,7 @@ export const penjualanItemTabel = sqliteTable("PenjualanItem", {
     .notNull()
     .references(() => produksiTable.id),
   jumlah_terjual: integer("jumlah_terjual").notNull().default(0),
+  berat: real("berat").notNull().default(0),
   harga_satuan: integer("harga_satuan").notNull().default(0),
   sub_total: integer("sub_total").notNull().default(0),
   createdAt: integer("createdAt")

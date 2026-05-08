@@ -60,6 +60,7 @@ export interface PenjualanItem {
   id_komodity: number;
   id_produksi: number;
   jumlah_terjual: number;
+  berat: number;
   harga_satuan: number;
   sub_total: number;
   createdAt: string;

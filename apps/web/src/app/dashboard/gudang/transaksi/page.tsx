@@ -119,7 +119,7 @@ export default function DashboardBarang() {
     const newErrors: any = {};
     if (!formData.id_barang) newErrors.id_barang = "Barang harus dipilih";
     if (!formData.tanggal) newErrors.tanggal = "Tanggal harus diisi";
-    if (!formData.jumlah || formData.jumlah <= 0) newErrors.jumlah = "Jumlah harus lebih dari 0";
+    if (!formData.jumlah || formData.jumlah <= 0) newErrors.jumlah = "Jumlah buah harus lebih dari 0";
     
     // Validate stock for outgoing transactions
     if (transactionType === "keluar") {
@@ -207,7 +207,7 @@ export default function DashboardBarang() {
       accessorKey: "nama",
     },
     {
-      header: "Jumlah",
+      header: "Jumlah Buah",
       accessorKey: "jumlah"
     },
     {
@@ -442,17 +442,18 @@ export default function DashboardBarang() {
                 )}
               </div>
 
-              {/* Jumlah */}
+              {/* Jumlah Buah */}
               <div>
-                <label className="block text-sm font-medium mb-1">Jumlah</label>
+                <label className="block text-sm font-medium mb-1">Jumlah Buah</label>
                 <input
                   type="number"
                   min="1"
+                  step="1"
                   max={transactionType === "keluar" ? getAvailableStock() : undefined}
                   value={formData.jumlah || ""}
                   onChange={(e) => handleChange("jumlah", e.target.value)}
                   className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder={`Masukkan jumlah${transactionType === "keluar" && formData.id_barang ? ` (max: ${getAvailableStock()})` : ""}`}
+                  placeholder={`Masukkan jumlah buah${transactionType === "keluar" && formData.id_barang ? ` (max: ${getAvailableStock()})` : ""}`}
                 />
                 {errors.jumlah && (
                   <p className="text-red-500 text-sm mt-1">{errors.jumlah}</p>
@@ -461,11 +462,11 @@ export default function DashboardBarang() {
                   <div className="mt-1">
                     {parseInt(formData.jumlah) > getAvailableStock() ? (
                       <p className="text-red-500 text-xs">
-                        ⚠️ Jumlah melebihi stok tersedia ({getAvailableStock()})
+                        ⚠️ Jumlah buah melebihi stok tersedia ({getAvailableStock()})
                       </p>
                     ) : (
                       <p className="text-green-600 text-xs">
-                        ✓ Jumlah valid
+                        ✓ Jumlah buah valid
                       </p>
                     )}
                   </div>
