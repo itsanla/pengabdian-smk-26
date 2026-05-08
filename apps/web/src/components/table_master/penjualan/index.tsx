@@ -10,6 +10,7 @@ import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
 import { printStruk } from "@/components/struk/StrukPembelian";
 import { usePaginatedApi } from "@/hooks/usePaginatedApi";
+import BayarPenjualanModal from "./bayar";
 
 export default function Penjualan() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,6 +25,13 @@ export default function Penjualan() {
   const [penjualanDetails, setPenjualanDetails] = useState<
     Record<number, PenjualanType>
   >({});
+  const [bayarModalPenjualan, setBayarModalPenjualan] = useState<{
+    id: number;
+    total_harga: number;
+    total_terbayar: number;
+    sisa_bayar: number;
+    status: string;
+  } | null>(null);
   const [loadingPenjualanDetailId, setLoadingPenjualanDetailId] = useState<
     number | null
   >(null);
@@ -178,12 +186,45 @@ export default function Penjualan() {
         </span>
       ),
     },
+    {
+      header: "Status",
+      accessorKey: "status" as keyof PenjualanType,
+      cell: (item: PenjualanType) => {
+        const s = (item.status ?? "lunas") as "lunas" | "angsuran" | "hutang";
+        const colors = {
+          lunas: "bg-green-100 text-green-800",
+          angsuran: "bg-yellow-100 text-yellow-800",
+          hutang: "bg-red-100 text-red-800",
+        };
+        const labels = { lunas: "Lunas", angsuran: "Angsuran", hutang: "Hutang" };
+        return (
+          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${colors[s]}`}>
+            {labels[s]}
+          </span>
+        );
+      },
+    },
     { header: "Keterangan", accessorKey: "keterangan" as keyof PenjualanType },
     {
       header: "Aksi",
       accessorKey: "id" as keyof PenjualanType,
       cell: (item: PenjualanType) => (
         <div className="relative flex items-center gap-2 justify-end">
+          {item.status && item.status !== "lunas" && (
+            <button
+              className="px-3 py-1 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 font-medium"
+              onClick={() => setBayarModalPenjualan({
+                id: item.id,
+                total_harga: item.total_harga,
+                total_terbayar: item.total_terbayar ?? 0,
+                sisa_bayar: item.sisa_bayar ?? (item.total_harga - (item.total_terbayar ?? 0)),
+                status: item.status ?? "hutang",
+              })}
+              type="button"
+            >
+              Bayar
+            </button>
+          )}
           <button
             onClick={() => togglePenjualanDropdown(item.id)}
             type="button"
@@ -284,6 +325,19 @@ export default function Penjualan() {
             : undefined
         }
       />
+
+      {bayarModalPenjualan && (
+        <BayarPenjualanModal
+          isOpen={true}
+          onClose={() => setBayarModalPenjualan(null)}
+          penjualan={bayarModalPenjualan}
+          onSubmitSuccess={() => {
+            setBayarModalPenjualan(null);
+            setPenjualanDetails({});
+            refresh(1);
+          }}
+        />
+      )}
 
       {/* ── Detail Modal — dirender di luar tabel agar fixed positioning bekerja ── */}
       {expandedPenjualanId !== null && (

@@ -76,8 +76,6 @@ export default function InputKomoditasForm({
     const [nama, setNama] = useState("");
     const [deskripsi, setDeskripsi] = useState("");
     const [foto, setFoto] = useState<File | null>(null);
-    const [satuan, setSatuan] = useState("");
-    const [isCustomSatuan, setIsCustomSatuan] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -104,8 +102,6 @@ export default function InputKomoditasForm({
             setIdJenis(initialData.id_jenis?.toString() || "");
             setNama(initialData.nama || "");
             setDeskripsi(initialData.deskripsi || "");
-            setSatuan(initialData.satuan || "");
-            setIsCustomSatuan(initialData.satuan && !["Kg", "Buah"].includes(initialData.satuan));
         }
         setErrors({}); // Clear errors on modal open/data change
     }, [formMode, initialData]);
@@ -132,7 +128,7 @@ export default function InputKomoditasForm({
             formData.append("id_jenis", id_jenis.toString());
             formData.append("nama", nama);
             formData.append("deskripsi", deskripsi);
-            formData.append("satuan", satuan);
+            formData.append("satuan", "kg");
             if (foto) {
                 formData.append("foto", foto);
             }
@@ -212,37 +208,6 @@ export default function InputKomoditasForm({
                         rows={4}
                     />
 
-
-                    <label>Satuan</label>
-                    <select
-                        value={isCustomSatuan ? "Isi Sendiri" : satuan}
-                        onChange={(e) => {
-                            const selectedValue = e.target.value;
-                            if (selectedValue === "Isi Sendiri") {
-                                setIsCustomSatuan(true);
-                                setSatuan(""); // Clear satuan when switching to custom
-                            } else {
-                                setIsCustomSatuan(false);
-                                setSatuan(selectedValue);
-                            }
-                        }}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
-                    >
-                        <option value="">Pilih Satuan</option>
-                        <option value="Kg">Kg</option>
-                        <option value="Buah">Buah</option>
-                        <option value="Isi Sendiri">Isi Sendiri</option>
-                    </select>
-                    {isCustomSatuan && (
-                        <input
-                            type="text"
-                            value={satuan}
-                            onChange={(e) => setSatuan(e.target.value)}
-                            className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white col-span-2"
-                            placeholder="Masukkan satuan custom"
-                            required
-                        />
-                    )}
 
                     <label>Upload Gambar</label>
                     <div className="flex flex-col gap-2">

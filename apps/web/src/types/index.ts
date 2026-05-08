@@ -69,10 +69,24 @@ export interface PenjualanItem {
   produksi?: Produksi;
 }
 
+export type StatusPembayaran = "lunas" | "angsuran" | "hutang";
+
+export interface PembayaranPenjualan {
+  id: number;
+  id_penjualan: number;
+  jumlah_bayar: number;
+  keterangan: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Penjualan {
   id: number;
   total_harga: number;
   keterangan: string;
+  status: StatusPembayaran;
+  total_terbayar: number;
+  sisa_bayar?: number;
   createdAt: string;
   updatedAt: string;
   jumlah_produk?: number;
@@ -84,6 +98,7 @@ export interface Penjualan {
   komoditas?: Komoditas;
   produksi?: Produksi;
   items?: PenjualanItem[];
+  pembayaran?: PembayaranPenjualan[];
 }
 
 export interface Barang {

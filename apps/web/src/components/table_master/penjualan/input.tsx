@@ -5,6 +5,7 @@ import { apiRequest, fetchAllPages } from "@/services/api.service";
 import toast from "react-hot-toast";
 import { useEffect, useRef, useState } from "react";
 import { printStruk } from "@/components/struk/StrukPembelian";
+import { StatusPembayaran } from "@/types";
 
 type PenjualanFormItem = {
   id_komodity: number;
@@ -96,6 +97,8 @@ export default function InputPenjualanForm({
   const [keteranganGlobal, setKeteranganGlobal] = useState("");
   const [loading, setLoading] = useState(false);
   const [cetakStruk, setCetakStruk] = useState(true);
+  const [status, setStatus] = useState<StatusPembayaran>("lunas");
+  const [uangMuka, setUangMuka] = useState("");
 
   const [komodityList, setKomodityList] = useState<any[]>([]);
   const [produksiList, setProduksiList] = useState<any[]>([]);
@@ -128,6 +131,8 @@ export default function InputPenjualanForm({
       setFormItems([createEmptyItem()]);
       setKeteranganGlobal("");
       setFormErrors({});
+      setStatus("lunas");
+      setUangMuka("");
     }
   }, [isOpen, formMode, initialData]);
 
@@ -304,10 +309,25 @@ export default function InputPenjualanForm({
       return;
     }
 
+    if (status === "angsuran") {
+      const dp = Number(uangMuka);
+      const total = formItems.reduce((sum, item) => sum + item.total_harga, 0);
+      if (!dp || dp <= 0) {
+        toast.error("Uang muka harus lebih dari 0 untuk status angsuran.");
+        return;
+      }
+      if (dp >= total) {
+        toast.error("Uang muka harus kurang dari total. Gunakan Lunas jika bayar penuh.");
+        return;
+      }
+    }
+
     setLoading(true);
 
     const payload = {
       keterangan: keteranganGlobal,
+      status,
+      ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}),
       items: formItems.map((item) => ({
         id_komodity: item.id_komodity,
         id_produksi: item.id_produksi,
@@ -501,14 +521,14 @@ export default function InputPenjualanForm({
                     <label className="mb-1 block text-sm">Berat (kg)</label>
                     <input
                       type="number"
-                      min={0.01}
-                      step={0.01}
+                      min={0.0001}
+                      step={0.0001}
                       value={item.berat || ""}
                       onChange={(e) =>
                         handleItemChange(index, "berat", e.target.value)
                       }
                       className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      placeholder="0.00 kg"
+                      placeholder="0.0000 kg"
                       required
                     />
                     {formErrors[`${index}.berat`] ? (
@@ -555,6 +575,38 @@ export default function InputPenjualanForm({
               rows={3}
             />
           </div>
+
+          {formMode === "create" && (
+            <>
+              <div>
+                <label className="mb-1 block text-sm">Status Pembayaran</label>
+                <select
+                  value={status}
+                  onChange={(e) => { setStatus(e.target.value as StatusPembayaran); setUangMuka(""); }}
+                  className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="lunas">Lunas — Bayar penuh di tempat</option>
+                  <option value="angsuran">Angsuran — Bayar sebagian (DP)</option>
+                  <option value="hutang">Hutang — Tidak ada pembayaran awal</option>
+                </select>
+              </div>
+
+              {status === "angsuran" && (
+                <div>
+                  <label className="mb-1 block text-sm">Uang Muka (Rp) *</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={uangMuka}
+                    onChange={(e) => setUangMuka(e.target.value)}
+                    className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    placeholder="Masukkan jumlah uang muka"
+                    required
+                  />
+                </div>
+              )}
+            </>
+          )}
 
           <div className="rounded border bg-gray-50 px-3 py-2 text-sm font-medium dark:border-gray-700 dark:bg-gray-800">
             Total transaksi: Rp

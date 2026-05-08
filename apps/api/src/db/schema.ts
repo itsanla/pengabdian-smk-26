@@ -87,6 +87,8 @@ export const penjualanTable = sqliteTable("Penjualan", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   total_harga: integer("total_harga").notNull().default(0),
   keterangan: text("keterangan").notNull(),
+  status: text("status").notNull().default("lunas"),
+  total_terbayar: integer("total_terbayar").notNull().default(0),
   createdAt: integer("createdAt")
     .notNull()
     .default(sql`(unixepoch())`),
@@ -184,9 +186,35 @@ export const produksiRelations = relations(produksiTable, ({ one, many }) => ({
   penjualanItems: many(penjualanItemTabel),
 }));
 
+export const pembayaranPenjualanTable = sqliteTable("PembayaranPenjualan", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  id_penjualan: integer("id_penjualan")
+    .notNull()
+    .references(() => penjualanTable.id, { onDelete: "cascade" }),
+  jumlah_bayar: integer("jumlah_bayar").notNull().default(0),
+  keterangan: text("keterangan").notNull().default(""),
+  createdAt: integer("createdAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+  updatedAt: integer("updatedAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 export const penjualanRelations = relations(penjualanTable, ({ many }) => ({
   penjualanItems: many(penjualanItemTabel),
+  pembayaran: many(pembayaranPenjualanTable),
 }));
+
+export const pembayaranPenjualanRelations = relations(
+  pembayaranPenjualanTable,
+  ({ one }) => ({
+    penjualan: one(penjualanTable, {
+      fields: [pembayaranPenjualanTable.id_penjualan],
+      references: [penjualanTable.id],
+    }),
+  }),
+);
 
 export const penjualanItemRelations = relations(
   penjualanItemTabel,
@@ -240,6 +268,7 @@ export type Komoditas = typeof komoditasTable.$inferSelect;
 export type AsalProduksi = typeof asalProduksiTable.$inferSelect;
 export type Produksi = typeof produksiTable.$inferSelect;
 export type Penjualan = typeof penjualanTable.$inferSelect;
+export type PembayaranPenjualan = typeof pembayaranPenjualanTable.$inferSelect;
 export type Barang = typeof barangTable.$inferSelect;
 export type TransaksiBarang = typeof transaksiBarangTable.$inferSelect;
 export type BahanBaku = typeof bahanBakuTable.$inferSelect;

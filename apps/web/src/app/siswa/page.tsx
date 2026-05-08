@@ -21,11 +21,13 @@ import { toast } from "sonner";
 import { apiRequest } from "@/services/api.service";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import { printStruk } from "@/components/struk/StrukPembelian";
+import BayarPenjualanModal from "@/components/table_master/penjualan/bayar";
 
 type PenjualanFormItem = {
   id_komodity: number;
   id_produksi: number;
   jumlah_terjual: number;
+  berat: number;
   total_harga: number;
   keterangan: string;
 };
@@ -34,6 +36,7 @@ const createEmptyItem = (): PenjualanFormItem => ({
   id_komodity: 0,
   id_produksi: 0,
   jumlah_terjual: 0,
+  berat: 0,
   total_harga: 0,
   keterangan: "",
 });
@@ -65,6 +68,8 @@ export default function KasirPage() {
   const [formItems, setFormItems] = useState<PenjualanFormItem[]>([
     createEmptyItem(),
   ]);
+  const [status, setStatus] = useState<"lunas" | "angsuran" | "hutang">("lunas");
+  const [uangMuka, setUangMuka] = useState("");
 
   const [showPenjualan, setShowPenjualan] = useState(false);
   const [cetakStruk, setCetakStruk] = useState(true);
@@ -77,9 +82,15 @@ export default function KasirPage() {
   const [loadingPenjualanDetailId, setLoadingPenjualanDetailId] = useState<
     number | null
   >(null);
+  const [bayarModalPenjualan, setBayarModalPenjualan] = useState<{
+    id: number;
+    total_harga: number;
+    total_terbayar: number;
+    sisa_bayar: number;
+    status: string;
+  } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Get unique komoditas from produksi data - Fixed property name
   const uniqueKomoditas = produksi.reduce((acc, prod) => {
     const existing = acc.find((item) => item.id === prod.komoditas?.id);
     if (!existing && prod.komoditas) {
@@ -89,6 +100,19 @@ export default function KasirPage() {
   }, [] as Komoditas[]);
 
   const grandTotal = formItems.reduce((sum, item) => sum + item.total_harga, 0);
+
+  const refreshData = async () => {
+    try {
+      const [dataPenjualan, dataProduksi] = await Promise.all([
+        apiRequest({ endpoint: "/penjualan" }),
+        apiRequest({ endpoint: "/produksi" }),
+      ]);
+      setPenjualan(dataPenjualan);
+      setProduksi(dataProduksi);
+    } catch {
+      // silently fail on background refresh
+    }
+  };
 
   useEffect(() => {
     const fetchPreference = async () => {
@@ -145,7 +169,11 @@ export default function KasirPage() {
       }
 
       if (!item.jumlah_terjual || item.jumlah_terjual <= 0) {
-        errors[`${index}.jumlah_terjual`] = "Jumlah harus lebih dari 0";
+        errors[`${index}.jumlah_terjual`] = "Jumlah buah harus lebih dari 0";
+      }
+
+      if (!item.berat || item.berat <= 0) {
+        errors[`${index}.berat`] = "Berat harus lebih dari 0";
       }
 
       if (item.id_produksi && item.jumlah_terjual) {
@@ -154,7 +182,7 @@ export default function KasirPage() {
         );
         if (selectedProduksi && item.jumlah_terjual > selectedProduksi.jumlah) {
           errors[`${index}.jumlah_terjual`] =
-            `Stok tidak mencukupi. Tersedia: ${selectedProduksi.jumlah} ${selectedProduksi.komoditas?.satuan}`;
+            `Stok tidak mencukupi. Tersedia: ${selectedProduksi.jumlah} buah`;
         }
       }
     });
@@ -228,6 +256,7 @@ export default function KasirPage() {
         "id_komodity",
         "id_produksi",
         "jumlah_terjual",
+        "berat",
       ];
 
       if (numberFields.includes(field)) {
@@ -240,6 +269,7 @@ export default function KasirPage() {
       if (field === "id_komodity") {
         current.id_produksi = 0;
         current.jumlah_terjual = 0;
+        current.berat = 0;
         current.total_harga = 0;
       }
 
@@ -251,9 +281,9 @@ export default function KasirPage() {
       const selectedProduksi = produksi.find(
         (p) => p.id === current.id_produksi,
       );
-      if (selectedProduksi && current.jumlah_terjual > 0) {
+      if (selectedProduksi && current.berat > 0) {
         current.total_harga =
-          selectedProduksi.harga_persatuan * current.jumlah_terjual;
+          selectedProduksi.harga_persatuan * current.berat;
       } else {
         current.total_harga = 0;
       }
@@ -296,15 +326,31 @@ export default function KasirPage() {
       return;
     }
 
+    if (status === "angsuran") {
+      const dp = Number(uangMuka);
+      const total = formItems.reduce((sum, item) => sum + item.total_harga, 0);
+      if (!dp || dp <= 0) {
+        toast.error("Uang muka harus lebih dari 0 untuk status angsuran.");
+        return;
+      }
+      if (dp >= total) {
+        toast.error("Uang muka harus kurang dari total. Gunakan Lunas jika bayar penuh.");
+        return;
+      }
+    }
+
     try {
       setIsLoading(true);
       setError(null);
 
-      const requestBody = {
+      const requestBody: Record<string, unknown> = {
+        status,
+        ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}),
         items: formItems.map((item) => ({
           id_komodity: item.id_komodity,
           id_produksi: item.id_produksi,
           jumlah_terjual: item.jumlah_terjual,
+          berat: item.berat,
           total_harga: item.total_harga,
           keterangan: item.keterangan,
         })),
@@ -317,7 +363,8 @@ export default function KasirPage() {
       });
 
       if (cetakStruk) {
-        const printableItems = requestBody.items
+        const items = requestBody.items as typeof formItems;
+        const printableItems = items
           .map((item) => {
             const selectedProd = produksi.find(
               (p) => p.id === item.id_produksi,
@@ -335,6 +382,7 @@ export default function KasirPage() {
               asalProduksi: selectedProd.asal_produksi?.nama ?? "-",
               hargaPersatuan: selectedProd.harga_persatuan,
               jumlahTerjual: item.jumlah_terjual,
+              berat: item.berat,
               totalHarga: item.total_harga,
             };
           })
@@ -343,11 +391,11 @@ export default function KasirPage() {
         if (printableItems.length > 0) {
           printStruk({
             items: printableItems,
-            total_harga: requestBody.items.reduce(
+            total_harga: formItems.reduce(
               (sum, item) => sum + item.total_harga,
               0,
             ),
-            keterangan: requestBody.items
+            keterangan: formItems
               .map((item) => item.keterangan.trim())
               .filter(Boolean)
               .join(" | "),
@@ -356,19 +404,15 @@ export default function KasirPage() {
         }
       }
 
-      // Refresh data
-      const [dataPenjualan, dataProduksi] = await Promise.all([
-        apiRequest({ endpoint: "/penjualan" }),
-        apiRequest({ endpoint: "/produksi" }),
-      ]);
-      setPenjualan(dataPenjualan);
-      setProduksi(dataProduksi);
+      await refreshData();
 
       // Reset form
       setFormItems([createEmptyItem()]);
       setFormErrors({});
+      setStatus("lunas");
+      setUangMuka("");
 
-      toast.success(`${requestBody.items.length} transaksi berhasil disimpan`);
+      toast.success(`${formItems.length} transaksi berhasil disimpan`);
     } catch (error) {
       console.error("Error creating penjualan:", error);
       const errorMessage = "Transaksi gagal disimpan. Silakan coba lagi.";
@@ -455,6 +499,24 @@ export default function KasirPage() {
       ),
     },
     {
+      header: "Status",
+      accessorKey: "status" as keyof Penjualan,
+      cell: (item: Penjualan) => {
+        const s = (item.status ?? "lunas") as "lunas" | "angsuran" | "hutang";
+        const colors = {
+          lunas: "bg-green-100 text-green-800",
+          angsuran: "bg-yellow-100 text-yellow-800",
+          hutang: "bg-red-100 text-red-800",
+        };
+        const labels = { lunas: "Lunas", angsuran: "Angsuran", hutang: "Hutang" };
+        return (
+          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${colors[s]}`}>
+            {labels[s]}
+          </span>
+        );
+      },
+    },
+    {
       header: "Keterangan",
       accessorKey: "keterangan" as keyof Penjualan,
       cell: (item: Penjualan) => (
@@ -468,6 +530,21 @@ export default function KasirPage() {
       accessorKey: "id" as keyof Penjualan,
       cell: (item: Penjualan) => (
         <div className="relative flex items-center gap-2 justify-end">
+          {item.status && item.status !== "lunas" && (
+            <button
+              className="px-3 py-2 rounded-lg bg-orange-500 text-white text-sm hover:bg-orange-600 font-medium"
+              onClick={() => setBayarModalPenjualan({
+                id: item.id,
+                total_harga: item.total_harga,
+                total_terbayar: item.total_terbayar ?? 0,
+                sisa_bayar: item.sisa_bayar ?? (item.total_harga - (item.total_terbayar ?? 0)),
+                status: item.status ?? "hutang",
+              })}
+              type="button"
+            >
+              Bayar
+            </button>
+          )}
           <button
             className="inline-flex items-center gap-1 rounded border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
             onClick={() => togglePenjualanDropdown(item.id)}
@@ -533,9 +610,14 @@ export default function KasirPage() {
                                 {detailItem.produksi?.kualitas ?? "-"}
                               </p>
                             </div>
-                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700 dark:bg-green-900 dark:text-green-200">
-                              {detailItem.jumlah_terjual} pcs
-                            </span>
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700">
+                                {detailItem.jumlah_terjual} buah
+                              </span>
+                              <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                                {detailItem.berat ?? 0} kg
+                              </span>
+                            </div>
                           </div>
                           <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                             <span>
@@ -543,7 +625,7 @@ export default function KasirPage() {
                               {new Intl.NumberFormat("id-ID").format(
                                 detailItem.harga_satuan,
                               )}
-                              ,-
+                              ,-/kg
                             </span>
                             <span>
                               Subtotal Rp
@@ -648,7 +730,6 @@ export default function KasirPage() {
           </div>
 
           <div className="p-6">
-
           <form onSubmit={handleSubmit} className="space-y-6">
             {formItems.map((item, index) => {
               const selectedProduksi = produksi.find(
@@ -704,8 +785,7 @@ export default function KasirPage() {
                             .reduce((sum, p) => sum + p.jumlah, 0);
                           return (
                             <option key={komoditas.id} value={komoditas.id}>
-                              {komoditas.nama} (Stok: {totalStock}{" "}
-                              {komoditas.satuan})
+                              {komoditas.nama} (Stok: {totalStock} buah)
                             </option>
                           );
                         })}
@@ -755,14 +835,10 @@ export default function KasirPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Jumlah
-                        {selectedProduksi
-                          ? ` (${selectedProduksi.komoditas?.satuan})`
-                          : ""}{" "}
-                        *
+                        Jumlah Buah *
                       </label>
                       <Input
                         type="number"
@@ -776,6 +852,7 @@ export default function KasirPage() {
                         }
                         placeholder="0"
                         min="1"
+                        step="1"
                         max={selectedProduksi?.jumlah || undefined}
                         className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
                           formErrors[`${index}.jumlah_terjual`]
@@ -785,8 +862,7 @@ export default function KasirPage() {
                       />
                       {selectedProduksi && (
                         <p className="mt-1 text-xs text-gray-500">
-                          Tersedia: {selectedProduksi.jumlah}{" "}
-                          {selectedProduksi.komoditas?.satuan}
+                          Tersedia: {selectedProduksi.jumlah} buah
                         </p>
                       )}
                       {formErrors[`${index}.jumlah_terjual`] && (
@@ -797,6 +873,35 @@ export default function KasirPage() {
                       )}
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Berat (kg) *
+                      </label>
+                      <Input
+                        type="number"
+                        value={item.berat || ""}
+                        onChange={(e) =>
+                          handleItemChange(index, "berat", e.target.value)
+                        }
+                        placeholder="0.0000"
+                        min="0.0001"
+                        step="0.0001"
+                        className={`w-full p-3 border-2 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all ${
+                          formErrors[`${index}.berat`]
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }`}
+                      />
+                      {formErrors[`${index}.berat`] && (
+                        <div className="flex items-center gap-1 mt-2 text-red-600 text-xs font-medium bg-red-50 p-2 rounded-lg">
+                          <AlertCircle size={14} />
+                          <span>{formErrors[`${index}.berat`]}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Keterangan
@@ -829,6 +934,15 @@ export default function KasirPage() {
                           disabled
                         />
                       </div>
+                      {item.berat > 0 && item.id_produksi > 0 && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {item.berat} kg × Rp
+                          {new Intl.NumberFormat("id-ID").format(
+                            produksi.find((p) => p.id === item.id_produksi)?.harga_persatuan ?? 0,
+                          )}
+                          /kg
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -853,6 +967,43 @@ export default function KasirPage() {
                   Rp{new Intl.NumberFormat("id-ID").format(grandTotal)}
                 </p>
               </div>
+            </div>
+
+            {/* Status Pembayaran */}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Status Pembayaran
+                </label>
+                <select
+                  value={status}
+                  onChange={(e) => {
+                    setStatus(e.target.value as typeof status);
+                    setUangMuka("");
+                  }}
+                  className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                >
+                  <option value="lunas">Lunas — Bayar penuh di tempat</option>
+                  <option value="angsuran">Angsuran — Bayar sebagian (DP)</option>
+                  <option value="hutang">Hutang — Tidak ada pembayaran awal</option>
+                </select>
+              </div>
+
+              {status === "angsuran" && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Uang Muka (Rp) *
+                  </label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={uangMuka}
+                    onChange={(e) => setUangMuka(e.target.value)}
+                    placeholder="Masukkan jumlah uang muka"
+                    className="w-full p-3 border-2 border-gray-300 rounded-xl bg-white text-gray-900 font-medium focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                  />
+                </div>
+              )}
             </div>
 
             <label className="flex items-center gap-3 cursor-pointer text-sm font-medium text-gray-700 bg-gray-50 p-4 rounded-xl border-2 border-gray-200 hover:bg-gray-100 transition-colors">
@@ -958,6 +1109,19 @@ export default function KasirPage() {
           </div>
         </div>
       </footer>
+
+      {bayarModalPenjualan && (
+        <BayarPenjualanModal
+          isOpen={true}
+          onClose={() => setBayarModalPenjualan(null)}
+          penjualan={bayarModalPenjualan}
+          onSubmitSuccess={() => {
+            setBayarModalPenjualan(null);
+            setPenjualanDetails({});
+            refreshData();
+          }}
+        />
+      )}
     </div>
   );
 }

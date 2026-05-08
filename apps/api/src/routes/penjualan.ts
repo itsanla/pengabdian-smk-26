@@ -7,6 +7,7 @@ import {
   komoditasTable,
   penjualanTable,
   penjualanItemTabel,
+  pembayaranPenjualanTable,
   produksiTable,
 } from "../db/schema";
 import { Validator } from "../utils/validation";
@@ -182,11 +183,29 @@ async function loadPenjualanDetail(
     }),
   );
 
+  const pembayaran = await db
+    .select({
+      id: pembayaranPenjualanTable.id,
+      jumlah_bayar: pembayaranPenjualanTable.jumlah_bayar,
+      keterangan: pembayaranPenjualanTable.keterangan,
+      createdAt: pembayaranPenjualanTable.createdAt,
+    })
+    .from(pembayaranPenjualanTable)
+    .where(eq(pembayaranPenjualanTable.id_penjualan, transaksi.id))
+    .orderBy(asc(pembayaranPenjualanTable.createdAt))
+    .all();
+
+  const pembayaranConverted = pembayaran.map((p: any) => convertTimestamps(p));
+
   return convertTimestamps({
     id: summary.id,
     total_harga: summary.total_harga,
     keterangan: summary.keterangan,
+    status: (transaksi as any).status ?? "lunas",
+    total_terbayar: (transaksi as any).total_terbayar ?? summary.total_harga,
+    sisa_bayar: summary.total_harga - ((transaksi as any).total_terbayar ?? summary.total_harga),
     items: itemsWithDetails,
+    pembayaran: pembayaranConverted,
     created_at: summary.createdAt,
     updated_at: summary.updatedAt,
   });
@@ -196,6 +215,8 @@ type PenjualanListHeader = {
   id: number;
   total_harga: number;
   keterangan: string;
+  status: string;
+  total_terbayar: number;
   createdAt: number;
   updatedAt: number;
 };
@@ -313,6 +334,8 @@ async function loadPenjualanListRows(
       id: penjualanTable.id,
       total_harga: penjualanTable.total_harga,
       keterangan: penjualanTable.keterangan,
+      status: penjualanTable.status,
+      total_terbayar: penjualanTable.total_terbayar,
       createdAt: penjualanTable.createdAt,
       updatedAt: penjualanTable.updatedAt,
     })
@@ -385,6 +408,7 @@ async function loadPenjualanListRows(
       jumlah_produk: relatedItems.length,
       kode_produksi_list: kodeProduksiList,
       total_berat_kg,
+      sisa_bayar: header.total_harga - header.total_terbayar,
     });
   });
 }
@@ -453,6 +477,8 @@ penjualanApp.post("/", async (c) => {
   try {
     const body = await c.req.json<{
       keterangan?: string;
+      status?: string;
+      uang_muka?: number | string;
       items?: Array<{
         keterangan?: string;
         id_komodity?: number | string;
@@ -598,15 +624,38 @@ penjualanApp.post("/", async (c) => {
         .filter(Boolean)
         .join(" | ");
 
+    const status = (body.status ?? "lunas") as string;
+    if (!["lunas", "angsuran", "hutang"].includes(status)) {
+      throw new AppError("Status tidak valid. Gunakan: lunas, angsuran, atau hutang", 400);
+    }
+    const uang_muka = Number(body.uang_muka ?? 0);
+    if (status === "angsuran") {
+      if (uang_muka <= 0) throw new AppError("Uang muka harus lebih dari 0 untuk status angsuran", 400);
+      if (uang_muka >= total_harga) throw new AppError("Uang muka harus kurang dari total harga", 400);
+    }
+    const total_terbayar = status === "lunas" ? total_harga : status === "angsuran" ? uang_muka : 0;
+
     const [newPenjualan] = await db
       .insert(penjualanTable)
       .values({
         keterangan,
         total_harga,
+        status,
+        total_terbayar,
         createdAt: now,
         updatedAt: now,
       })
       .returning();
+
+    if (total_terbayar > 0) {
+      await db.insert(pembayaranPenjualanTable).values({
+        id_penjualan: newPenjualan.id,
+        jumlah_bayar: total_terbayar,
+        keterangan: status === "lunas" ? "Pembayaran lunas" : "Uang muka awal",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
 
     const rollbackKomoditas: Array<{ id: number; jumlah: number }> = [];
     const rollbackProduksi: Array<{ id: number; jumlah: number }> = [];
@@ -728,6 +777,77 @@ penjualanApp.get("/:id", async (c) => {
       },
       200,
     );
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
+penjualanApp.post("/:id/bayar", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const body = await c.req.json<{
+      jumlah_bayar?: number | string;
+      keterangan?: string;
+    }>();
+
+    const v = new Validator();
+    v.required(body.jumlah_bayar, "jumlah_bayar", "Jumlah bayar harus diisi.");
+    v.check(
+      !isNaN(Number(body.jumlah_bayar)) && Number(body.jumlah_bayar) > 0,
+      "jumlah_bayar",
+      "Jumlah bayar harus berupa angka lebih dari 0.",
+    );
+
+    if (v.hasErrors()) {
+      return c.json({ success: false, message: "Validasi gagal", errors: v.getErrors() }, 400);
+    }
+
+    const db = getDb(c.env);
+    const now = Math.floor(Date.now() / 1000);
+
+    const penjualan = await db
+      .select()
+      .from(penjualanTable)
+      .where(eq(penjualanTable.id, id))
+      .get();
+    if (!penjualan) throw new AppError("Penjualan tidak ditemukan", 404);
+    if ((penjualan as any).status === "lunas") {
+      throw new AppError("Penjualan sudah lunas", 400);
+    }
+
+    const jumlah_bayar = Number(body.jumlah_bayar);
+    const sisa_bayar = (penjualan as any).total_harga - (penjualan as any).total_terbayar;
+
+    if (jumlah_bayar > sisa_bayar) {
+      throw new AppError(`Jumlah bayar melebihi sisa tagihan (Rp ${sisa_bayar.toLocaleString("id-ID")})`, 400);
+    }
+
+    const new_total_terbayar = (penjualan as any).total_terbayar + jumlah_bayar;
+    const new_status = new_total_terbayar >= (penjualan as any).total_harga ? "lunas" : "angsuran";
+
+    await db.insert(pembayaranPenjualanTable).values({
+      id_penjualan: id,
+      jumlah_bayar,
+      keterangan: body.keterangan?.trim() ?? "",
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await db
+      .update(penjualanTable)
+      .set({ total_terbayar: new_total_terbayar, status: new_status, updatedAt: now })
+      .where(eq(penjualanTable.id, id));
+
+    return c.json({
+      success: true,
+      message: `Pembayaran berhasil. Status: ${new_status}`,
+      data: convertTimestamps({
+        id,
+        status: new_status,
+        total_terbayar: new_total_terbayar,
+        sisa_bayar: (penjualan as any).total_harga - new_total_terbayar,
+      }),
+    });
   } catch (error) {
     return handleAnyError(c, error);
   }
