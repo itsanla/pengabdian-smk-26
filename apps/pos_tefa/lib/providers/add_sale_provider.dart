@@ -7,7 +7,8 @@ import '../models/produksi.dart';
 import '../services/api_service.dart';
 
 class AddSaleProvider extends ChangeNotifier {
-  AddSaleProvider({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  AddSaleProvider({ApiService? apiService})
+    : _apiService = apiService ?? ApiService();
 
   final ApiService _apiService;
 
@@ -18,9 +19,13 @@ class AddSaleProvider extends ChangeNotifier {
   bool _isLoading = true;
   bool _isSaving = false;
   String? _errorMessage;
-  String _quantityText = '1';
+  String _beratText = '1';
+  String _jumlahTerjualText = '1';
   String _note = '';
-  int _quantityResetKey = 0;
+  String _paymentMethod = 'lunas';
+  String _firstInstallmentText = '';
+  int _beratResetKey = 0;
+  int _jumlahTerjualResetKey = 0;
 
   UnmodifiableListView<Produksi> get productions =>
       UnmodifiableListView<Produksi>(_productions);
@@ -30,22 +35,39 @@ class AddSaleProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
-  String get quantityText => _quantityText;
+  String get beratText => _beratText;
+  String get jumlahTerjualText => _jumlahTerjualText;
   String get note => _note;
-  int get quantityResetKey => _quantityResetKey;
+  String get paymentMethod => _paymentMethod;
+  String get firstInstallmentText => _firstInstallmentText;
+  int get beratResetKey => _beratResetKey;
+  int get jumlahTerjualResetKey => _jumlahTerjualResetKey;
+  bool get isInstallmentPayment => _paymentMethod == 'angsuran';
 
-  int get totalQuantity => _items.fold<int>(0, (sum, item) => sum + item.quantity);
+  double get totalJumlahTerjual =>
+      _items.fold<double>(0, (sum, item) => sum + item.jumlahTerjual);
 
-  int get totalValue => _items.fold<int>(0, (sum, item) => sum + item.subtotal);
+  double get totalValue =>
+      _items.fold<double>(0, (sum, item) => sum + item.subtotal);
 
   bool get hasItems => _items.isNotEmpty;
+
+  String formatQuantity(double value) {
+    if (value % 1 == 0) {
+      return value.toStringAsFixed(0);
+    }
+
+    return value.toString();
+  }
 
   void startNewSale() {
     _items.clear();
     _selectedProduction = _productions.isEmpty ? null : _productions.first;
-    _quantityText = '1';
+    _beratText = '1';
+    _jumlahTerjualText = '1';
     _note = '';
-    _quantityResetKey++;
+    _beratResetKey++;
+    _jumlahTerjualResetKey++;
     _errorMessage = null;
     notifyListeners();
   }
@@ -59,12 +81,68 @@ class AddSaleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateQuantity(String value) {
-    _quantityText = value;
+  void updateBerat(String value) {
+    _beratText = value;
+  }
+
+  void updatejumlahTerjual(String value) {
+    _jumlahTerjualText = value;
   }
 
   void updateNote(String value) {
     _note = value;
+  }
+
+  void updatePaymentMethod(String value) {
+    if (_paymentMethod == value) {
+      return;
+    }
+
+    _paymentMethod = value;
+    if (_paymentMethod != 'angsuran') {
+      _firstInstallmentText = '';
+    }
+    notifyListeners();
+  }
+
+  void updateFirstInstallment(String value) {
+    _firstInstallmentText = value;
+  }
+
+  int? get firstInstallmentAmount {
+    if (!isInstallmentPayment) {
+      return null;
+    }
+
+    return int.tryParse(
+      _firstInstallmentText.replaceAll(RegExp(r'[^0-9]'), ''),
+    );
+  }
+
+  String get paymentSummaryLabel {
+    switch (_paymentMethod) {
+      case 'hutang':
+        return 'Pembayaran: Hutang';
+      case 'angsuran':
+        final amount = firstInstallmentAmount;
+        final installmentText = amount == null
+            ? 'Uang muka belum diisi'
+            : 'Uang muka: $amount';
+        return 'Pembayaran: Angsuran ($installmentText)';
+      case 'lunas':
+      default:
+        return 'Pembayaran: Lunas';
+    }
+  }
+
+  String get composedNote {
+    final trimmedNote = _note.trim();
+    final parts = <String>[
+      paymentSummaryLabel,
+      if (trimmedNote.isNotEmpty) trimmedNote,
+    ];
+
+    return parts.join(' | ');
   }
 
   Future<void> loadProductions(String token) async {
@@ -102,9 +180,14 @@ class AddSaleProvider extends ChangeNotifier {
       return 'Pilih produksi terlebih dahulu';
     }
 
-    final quantity = int.tryParse(_quantityText) ?? 0;
-    if (quantity <= 0) {
+    final berat = double.tryParse(_beratText.replaceAll(',', '.').trim()) ?? 0;
+    if (berat <= 0) {
       return 'Jumlah harus lebih besar dari 0';
+    }
+
+    final jumlahTerjual = int.tryParse(_jumlahTerjualText.trim()) ?? 0;
+    if (jumlahTerjual <= 0) {
+      return 'Jumlah buah harus lebih besar dari 0';
     }
 
     final existingIndex = _items.indexWhere(
@@ -114,14 +197,23 @@ class AddSaleProvider extends ChangeNotifier {
     if (existingIndex >= 0) {
       final existing = _items[existingIndex];
       _items[existingIndex] = existing.copyWith(
-        quantity: existing.quantity + quantity,
+        berat: existing.berat + berat,
+        jumlahTerjual: existing.jumlahTerjual + jumlahTerjual,
       );
     } else {
-      _items.add(CartItem(produksi: production, quantity: quantity));
+      _items.add(
+        CartItem(
+          produksi: production,
+          berat: berat,
+          jumlahTerjual: jumlahTerjual,
+        ),
+      );
     }
 
-    _quantityText = '1';
-    _quantityResetKey++;
+    _beratText = '1';
+    _jumlahTerjualText = '1';
+    _beratResetKey++;
+    _jumlahTerjualResetKey++;
     _errorMessage = null;
     notifyListeners();
     return null;
@@ -137,6 +229,11 @@ class AddSaleProvider extends ChangeNotifier {
       throw ApiException('Tambahkan minimal satu item penjualan');
     }
 
+    if (isInstallmentPayment &&
+        (firstInstallmentAmount == null || firstInstallmentAmount! <= 0)) {
+      throw ApiException('Masukkan nominal uang muka');
+    }
+
     _isSaving = true;
     _errorMessage = null;
     notifyListeners();
@@ -147,15 +244,18 @@ class AddSaleProvider extends ChangeNotifier {
             (item) => {
               'id_komodity': item.produksi.idKomoditas,
               'id_produksi': item.produksi.id,
-              'jumlah_terjual': item.quantity,
+              'berat': item.berat,
+              'jumlah_terjual': item.jumlahTerjual,
             },
           )
           .toList(growable: false);
 
       final message = await _apiService.createPenjualan(
         token: token,
-        keterangan: _note.trim(),
+        keterangan: composedNote,
         items: payload,
+        status: _paymentMethod,
+        uangMuka: isInstallmentPayment ? firstInstallmentAmount : null,
       );
 
       startNewSale();
@@ -182,9 +282,13 @@ class AddSaleProvider extends ChangeNotifier {
     _isLoading = true;
     _isSaving = false;
     _errorMessage = null;
-    _quantityText = '1';
+    _beratText = '1';
+    _jumlahTerjualText = '1';
     _note = '';
-    _quantityResetKey++;
+    _paymentMethod = 'lunas';
+    _firstInstallmentText = '';
+    _beratResetKey++;
+    _jumlahTerjualResetKey++;
     notifyListeners();
   }
 }

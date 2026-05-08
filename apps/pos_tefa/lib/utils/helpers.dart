@@ -23,8 +23,9 @@ class Helpers {
     return null;
   }
 
-  static String formatCurrency(int value) {
-    final digits = value.abs().toString();
+  static String formatCurrency(num value) {
+    final normalized = value.round();
+    final digits = normalized.abs().toString();
     final reversed = digits.split('').reversed.toList();
     final buffer = StringBuffer();
 
@@ -36,10 +37,10 @@ class Helpers {
     }
 
     final formatted = buffer.toString().split('').reversed.join();
-    return '${value < 0 ? '-' : ''}$formatted';
+    return '${normalized < 0 ? '-' : ''}$formatted';
   }
 
-  static String formatRupiah(int value) => 'Rp ${formatCurrency(value)}';
+  static String formatRupiah(num value) => 'Rp ${formatCurrency(value)}';
 
   static String formatTanggal(DateTime? value) {
     final local = (value ?? DateTime.now()).toLocal();
@@ -62,5 +63,12 @@ class Helpers {
         '${monthNames[local.month - 1]} '
         '${local.year} '
         '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+extension StringExtension on String {
+  String capitalize() {
+    if (this.isEmpty) return this;
+    return "${this[0].toUpperCase()}${this.substring(1).toLowerCase()}";
   }
 }

@@ -37,13 +37,14 @@ class ReceiptPrinter {
         _writeLabelValue(buffer, 'Kualitas', item.produksi.kualitas);
         _writeLabelValue(
           buffer,
-          'Harga/Satuan',
+          'Harga/kg',
           Helpers.formatRupiah(item.hargaSatuan),
         );
+        _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
         _writeLabelValue(
           buffer,
-          'Jumlah',
-          '${item.jumlahTerjual} ${item.komoditas.satuan}',
+          'Berat',
+          '${item.berat} ${item.komoditas.satuan}',
         );
         _writeLabelValue(
           buffer,
@@ -68,13 +69,14 @@ class ReceiptPrinter {
       buffer.writeln(_repeat('-', 32));
       _writeLabelValue(
         buffer,
-        'Harga/Satuan',
+        'Harga/kg',
         Helpers.formatRupiah(item.hargaSatuan),
       );
+      _writeLabelValue(buffer, 'Jumlah Buah', '${item.jumlahTerjual} buah');
       _writeLabelValue(
         buffer,
-        'Jumlah',
-        '${item.jumlahTerjual} ${item.komoditas.satuan}',
+        'Berat',
+        '${item.berat} ${item.komoditas.satuan}',
       );
     }
 
@@ -158,13 +160,6 @@ class ReceiptPrinter {
     Generator generator,
     PenjualanDetail sale,
   ) {
-    /*   final bytes = generator.text(
-      "TEST",
-      styles: const PosStyles(align: PosAlign.center),
-    );
-
-    print(bytes);
-    return bytes; */
     final bytes = <int>[];
 
     bytes.addAll(generator.reset());
@@ -237,15 +232,22 @@ class ReceiptPrinter {
         bytes.addAll(
           _labelValueRow(
             generator,
-            'Harga/Satuan',
+            'Harga/kg',
             Helpers.formatRupiah(item.hargaSatuan),
           ),
         );
         bytes.addAll(
           _labelValueRow(
             generator,
-            'Jumlah',
-            '${item.jumlahTerjual} ${item.komoditas.satuan}',
+            'Jumlah Buah',
+            '${item.jumlahTerjual} buah',
+          ),
+        );
+        bytes.addAll(
+          _labelValueRow(
+            generator,
+            'Berat',
+            '${item.berat} ${item.komoditas.satuan}',
           ),
         );
         bytes.addAll(
@@ -281,15 +283,18 @@ class ReceiptPrinter {
       bytes.addAll(
         _labelValueRow(
           generator,
-          'Harga/Satuan',
+          'Harga/kg',
           Helpers.formatRupiah(item.hargaSatuan),
         ),
       );
       bytes.addAll(
+        _labelValueRow(generator, 'Jumlah Buah', '${item.jumlahTerjual} buah'),
+      );
+      bytes.addAll(
         _labelValueRow(
           generator,
-          'Jumlah',
-          '${item.jumlahTerjual} ${item.komoditas.satuan}',
+          'Berat',
+          '${item.berat} ${item.komoditas.satuan}',
         ),
       );
     }

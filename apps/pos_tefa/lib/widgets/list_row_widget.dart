@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class ListRowWidget extends StatelessWidget {
   final String label;
-  final String value;
+  final dynamic value;
   final bool emphasize;
   const ListRowWidget({
     super.key,
@@ -15,8 +15,17 @@ class ListRowWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final baseStyle = Theme.of(context).textTheme.bodyMedium;
 
+    final valueWidget = value is String
+        ? Text(
+            value as String,
+            style: baseStyle?.copyWith(
+              color: emphasize ? const Color(0xFF0F766E) : Colors.black87,
+              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
+            ),
+          )
+        : (value as Widget);
+
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           width: 110,
@@ -29,15 +38,7 @@ class ListRowWidget extends StatelessWidget {
           ),
         ),
         const Text(': '),
-        Expanded(
-          child: Text(
-            value,
-            style: baseStyle?.copyWith(
-              color: emphasize ? const Color(0xFF0F766E) : Colors.black87,
-              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w600,
-            ),
-          ),
-        ),
+        valueWidget,
       ],
     );
   }

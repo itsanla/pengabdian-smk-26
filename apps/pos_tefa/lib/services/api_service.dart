@@ -238,11 +238,20 @@ class ApiService {
     required String token,
     required String keterangan,
     required List<Map<String, dynamic>> items,
+    String? status,
+    int? uangMuka,
   }) async {
+    final bodyPayload = <String, dynamic>{
+      'keterangan': keterangan,
+      'items': items,
+      if (status != null) 'status': status,
+      if (uangMuka != null) 'uang_muka': uangMuka,
+    };
+
     final response = await _client.post(
       _uri('/penjualan'),
       headers: _jsonHeaders(token: token),
-      body: jsonEncode({'keterangan': keterangan, 'items': items}),
+      body: jsonEncode(bodyPayload),
     );
 
     final body = _decodeBody(response);
@@ -257,5 +266,31 @@ class ApiService {
     }
 
     return (body['message'] ?? 'Penjualan berhasil disimpan.') as String;
+  }
+
+  Future<String> bayarPenjualan({
+    required String token,
+    required int saleId,
+    required num jumlahBayar,
+    required String keterangan,
+  }) async {
+    final response = await _client.post(
+      _uri('/penjualan/$saleId/bayar'),
+      headers: _jsonHeaders(token: token),
+      body: jsonEncode({'jumlah_bayar': jumlahBayar, 'keterangan': keterangan}),
+    );
+
+    final body = _decodeBody(response);
+    final success = body['success'] == true;
+
+    if (response.statusCode == 401) {
+      _throwUnauthorized();
+    }
+
+    if (!success || response.statusCode >= 400) {
+      _throwApiError(body, statusCode: response.statusCode);
+    }
+
+    return (body['message'] ?? 'Pembayaran berhasil disimpan.') as String;
   }
 }

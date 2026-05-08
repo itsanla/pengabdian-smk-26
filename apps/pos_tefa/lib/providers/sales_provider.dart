@@ -120,6 +120,20 @@ class SalesProvider extends ChangeNotifier {
     return _apiService.getPenjualanDetail(token, saleId);
   }
 
+  Future<String> paySale({
+    required String token,
+    required int saleId,
+    required num jumlahBayar,
+    required String keterangan,
+  }) {
+    return _apiService.bayarPenjualan(
+      token: token,
+      saleId: saleId,
+      jumlahBayar: jumlahBayar,
+      keterangan: keterangan,
+    );
+  }
+
   void clear() {
     _sales.clear();
     _isLoading = true;

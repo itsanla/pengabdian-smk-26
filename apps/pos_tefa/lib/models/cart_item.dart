@@ -1,14 +1,23 @@
 import 'package:pos_tefa/models/produksi.dart';
 
 class CartItem {
-  const CartItem({required this.produksi, required this.quantity});
+  const CartItem({
+    required this.produksi,
+    required this.berat,
+    required this.jumlahTerjual,
+  });
 
   final Produksi produksi;
-  final int quantity;
+  final double berat;
+  final int jumlahTerjual;
 
-  CartItem copyWith({int? quantity}) {
-    return CartItem(produksi: produksi, quantity: quantity ?? this.quantity);
+  CartItem copyWith({double? berat, int? jumlahTerjual}) {
+    return CartItem(
+      produksi: produksi,
+      berat: berat ?? this.berat,
+      jumlahTerjual: jumlahTerjual ?? this.jumlahTerjual,
+    );
   }
 
-  int get subtotal => quantity * produksi.hargaPersatuan;
+  double get subtotal => berat * produksi.hargaPersatuan;
 }

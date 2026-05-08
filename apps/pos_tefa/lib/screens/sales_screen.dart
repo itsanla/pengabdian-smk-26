@@ -7,9 +7,9 @@ import '../models/app_models.dart';
 import '../models/penjualan.dart';
 import '../providers/sales_provider.dart';
 import '../services/api_service.dart';
-import '../widgets/sale_detail_modal.dart';
 import '../widgets/sales_list_section.dart';
 import 'add_sale_screen.dart';
+import 'sale_detail_screen.dart';
 
 class SalesScreen extends StatefulWidget {
   const SalesScreen({
@@ -116,24 +116,22 @@ class _SalesScreenState extends State<SalesScreen> {
 
   Future<void> _openSaleDetail(Penjualan sale) async {
     try {
-      final detail = await _provider.loadSaleDetail(
-        widget.session.token,
-        sale.id,
-      );
       if (!mounted) return;
 
-      await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        backgroundColor: Colors.white,
-        builder: (sheetContext) => SaleDetailModal(
-          detail: detail,
-          provider: _provider,
-          session: widget.session,
-          onSessionExpired: widget.onSessionExpired,
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (_) => SaleDetailScreen(
+            sale: sale,
+            provider: _provider,
+            session: widget.session,
+            onSessionExpired: widget.onSessionExpired,
+          ),
         ),
       );
+
+      if (mounted) {
+        await _loadSales();
+      }
     } on ApiUnauthorizedException {
       if (!mounted) return;
       await widget.onSessionExpired();

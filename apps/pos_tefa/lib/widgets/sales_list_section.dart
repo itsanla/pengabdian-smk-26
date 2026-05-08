@@ -42,7 +42,6 @@ class SalesListSection extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
-              // Header with stats
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
@@ -80,7 +79,6 @@ class SalesListSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Search field
               TextField(
                 controller: searchController,
                 onChanged: onSearchChanged,
@@ -97,7 +95,6 @@ class SalesListSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Error message
               if (provider.errorMessage != null)
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -113,7 +110,6 @@ class SalesListSection extends StatelessWidget {
                 ),
               if (provider.errorMessage != null) const SizedBox(height: 16),
 
-              // Printer status
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -138,14 +134,12 @@ class SalesListSection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Create sale button
               FilledButton(
                 onPressed: onCreateSale,
                 child: const Text('Buat Penjualan'),
               ),
               const SizedBox(height: 16),
 
-              // Sales list title
               Text(
                 'Daftar Penjualan',
                 style: Theme.of(
@@ -154,7 +148,6 @@ class SalesListSection extends StatelessWidget {
               ),
               const SizedBox(height: 12),
 
-              // Sales list or loading/empty state
               if (provider.isLoading)
                 const Center(
                   child: Padding(

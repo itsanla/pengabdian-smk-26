@@ -6,6 +6,7 @@ import '../providers/add_sale_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
 import '../utils/helpers.dart';
+import '../widgets/currency_input_field.dart';
 
 class AddSaleScreen extends StatefulWidget {
   const AddSaleScreen({super.key, required this.token});
@@ -43,9 +44,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
       }
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -58,9 +59,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     try {
       final message = await _provider.submit(widget.token);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pop(true);
     } on ApiUnauthorizedException {
       if (!mounted) return;
@@ -70,9 +71,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
       }
     } on ApiException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,9 +83,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -103,8 +104,8 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       Text(
                         'Tambah Item Penjualan',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       if (provider.errorMessage != null)
@@ -120,9 +121,12 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                             style: TextStyle(color: Colors.red.shade700),
                           ),
                         ),
-                      if (provider.errorMessage != null) const SizedBox(height: 12),
+                      if (provider.errorMessage != null)
+                        const SizedBox(height: 12),
                       DropdownButtonFormField<Produksi>(
-                        key: ValueKey(provider.selectedProduction?.id ?? 'none'),
+                        key: ValueKey(
+                          provider.selectedProduction?.id ?? 'none',
+                        ),
                         isExpanded: true,
                         initialValue: provider.selectedProduction,
                         decoration: const InputDecoration(
@@ -145,7 +149,10 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       const SizedBox(height: 8),
                       if (provider.selectedProduction != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF7FFFB),
                             borderRadius: BorderRadius.circular(12),
@@ -153,21 +160,33 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                           ),
                           child: Text(
                             'Stok tersedia: ${provider.selectedProduction!.jumlah} ${provider.selectedProduction!.komoditas?.satuan ?? ''}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                         ),
                       const SizedBox(height: 12),
                       TextFormField(
-                        key: ValueKey(provider.quantityResetKey),
-                        initialValue: provider.quantityText,
-                        keyboardType: TextInputType.number,
+                        key: ValueKey(provider.beratResetKey),
+                        initialValue: provider.beratText,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
-                          labelText: 'Jumlah terjual',
+                          labelText: 'Jumlah berat',
                           border: OutlineInputBorder(),
                         ),
-                        onChanged: provider.updateQuantity,
+                        onChanged: provider.updateBerat,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        key: ValueKey('buah-${provider.jumlahTerjualResetKey}'),
+                        initialValue: provider.jumlahTerjualText,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Jumlah buah',
+                          border: OutlineInputBorder(),
+                        ),
+                        onChanged: provider.updatejumlahTerjual,
                       ),
                       const SizedBox(height: 12),
                       FilledButton.icon(
@@ -185,9 +204,8 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                       const SizedBox(height: 20),
                       Text(
                         'Daftar Item',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 10),
                       if (provider.items.isEmpty)
@@ -211,24 +229,28 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE6ECE9)),
+                                border: Border.all(
+                                  color: const Color(0xFFE6ECE9),
+                                ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
-                                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                        ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
+                                        ?.copyWith(fontWeight: FontWeight.w800),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Ukuran: ${item.produksi.ukuran}  •  Kualitas: ${item.produksi.kualitas}',
                                   ),
                                   Text(
-                                    'Qty: ${item.quantity} ${item.produksi.komoditas?.satuan ?? ''}',
+                                    'Berat: ${provider.formatQuantity(item.berat)} ${item.produksi.komoditas?.satuan ?? ''}',
                                   ),
+                                  Text('Jumlah buah: ${item.jumlahTerjual}'),
                                   Text(
                                     'Subtotal: ${Helpers.formatRupiah(item.subtotal)}',
                                   ),
@@ -238,7 +260,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                                     child: TextButton.icon(
                                       onPressed: provider.isSaving
                                           ? null
-                                          : () => provider.removeItem(item.produksi.id),
+                                          : () => provider.removeItem(
+                                              item.produksi.id,
+                                            ),
                                       icon: const Icon(Icons.delete_outline),
                                       label: const Text('Hapus'),
                                     ),
@@ -261,16 +285,56 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                           children: [
                             Text(
                               'Ringkasan',
-                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w800),
                             ),
                             const SizedBox(height: 6),
-                            Text('Total item: ${provider.totalQuantity}'),
-                            Text('Total nilai: ${Helpers.formatRupiah(provider.totalValue)}'),
+                            Text(
+                              'Total item: ${provider.formatQuantity(provider.totalJumlahTerjual)}',
+                            ),
+                            Text(
+                              'Total nilai: ${Helpers.formatRupiah(provider.totalValue)}',
+                            ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        key: ValueKey(provider.paymentMethod),
+                        initialValue: provider.paymentMethod,
+                        decoration: const InputDecoration(
+                          labelText: 'Status',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'lunas',
+                            child: Text('Lunas'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'hutang',
+                            child: Text('Hutang'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'angsuran',
+                            child: Text('Angsuran'),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            provider.updatePaymentMethod(value);
+                          }
+                        },
+                      ),
+                      if (provider.isInstallmentPayment) ...[
+                        const SizedBox(height: 12),
+                        CurrencyInputField(
+                          labelText: 'Nominal uang muka',
+                          initialValue: provider.firstInstallmentText,
+                          onChanged: provider.updateFirstInstallment,
+                          prefixText: 'Rp ',
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       TextFormField(
                         initialValue: provider.note,
@@ -295,7 +359,9 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                               )
                             : const Icon(Icons.save_rounded),
                         label: Text(
-                          provider.isSaving ? 'Menyimpan...' : 'Simpan Penjualan',
+                          provider.isSaving
+                              ? 'Menyimpan...'
+                              : 'Simpan Penjualan',
                         ),
                       ),
                     ],

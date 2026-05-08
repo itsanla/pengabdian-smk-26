@@ -43,50 +43,50 @@ class SaleCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               ListRowWidget(
+                label: 'Status',
+                value: StatChipWidget(
+                  label: sale.status.capitalize(),
+                  color: sale.status == 'lunas'
+                      ? Colors.green.shade500
+                      : sale.status == 'angsuran'
+                      ? Colors.orange.shade500
+                      : Colors.red.shade500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListRowWidget(
                 label: 'Total Produk',
                 value: sale.jumlahProduk.toString(),
                 emphasize: true,
               ),
               const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 110,
-                    child: Text(
-                      "Kode Produksi",
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const Text(': '),
-                  Expanded(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: sale.kodeProduksiList.isEmpty
-                          ? [
+              ListRowWidget(
+                label: 'Kode Produksi',
+                value: Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: sale.kodeProduksiList.isEmpty
+                        ? [
+                            StatChipWidget(
+                              label: '-',
+                              color: Colors.blue.shade300,
+                            ),
+                          ]
+                        : [
+                            StatChipWidget(
+                              label: sale.kodeProduksiList.first,
+                              color: Colors.blue.shade300,
+                            ),
+                            if (sale.kodeProduksiList.length > 1)
                               StatChipWidget(
-                                label: '-',
+                                label: '+${sale.kodeProduksiList.length - 1}',
                                 color: Colors.blue.shade300,
                               ),
-                            ]
-                          : [
-                              StatChipWidget(
-                                label: sale.kodeProduksiList.first,
-                                color: Colors.blue.shade300,
-                              ),
-                              if (sale.kodeProduksiList.length > 1)
-                                StatChipWidget(
-                                  label: '+${sale.kodeProduksiList.length - 1}',
-                                  color: Colors.blue.shade300,
-                                ),
-                            ],
-                    ),
+                          ],
                   ),
-                ],
+                ),
+                emphasize: true,
               ),
               const SizedBox(height: 8),
               ListRowWidget(label: 'Tanggal', value: sale.displayDate),
