@@ -181,7 +181,7 @@ export default function Penjualan() {
       cell: (item: PenjualanType) => (
         <span className="font-medium">
           {item.total_harga
-            ? `Rp${new Intl.NumberFormat("id-ID").format(item.total_harga)},-`
+            ? `Rp. ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(item.total_harga)}`
             : "-"}
         </span>
       ),

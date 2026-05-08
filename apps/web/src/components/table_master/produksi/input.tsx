@@ -73,7 +73,6 @@ export default function InputProduksiForm({
     const [id_asal, setId_Asal] = useState("");
     const [id_komoditas, setIdKomoditas] = useState("");
     const [kode_produksi, setKode_Produksi] = useState("");
-    const [ukuran, setUkuran] = useState("");
     const [kualitas, setKualitas] = useState("");
     const [jumlah_diproduksi, setJumlahDiproduksi] = useState("");
     const [harga_persatuan, setHargaPersatuan] = useState("");
@@ -94,7 +93,6 @@ export default function InputProduksiForm({
             setId_Asal(initialData.id_asal?.toString() || "");
             setIdKomoditas(initialData.id_komoditas?.toString() || "");
             setKode_Produksi(initialData.kode_produksi || "");
-            setUkuran(initialData.ukuran || "");
             setKualitas(initialData.kualitas || "");
             setJumlahDiproduksi(initialData.jumlah?.toString() || "");
             setHargaPersatuan(initialData.harga_persatuan?.toString() || "");
@@ -135,7 +133,6 @@ export default function InputProduksiForm({
             id_asal: parseInt(id_asal),
             id_komoditas: parseInt(id_komoditas),
             kode_produksi,
-            ukuran,
             kualitas,
             jumlah_diproduksi: parseInt(jumlah_diproduksi),
             harga_persatuan: parseFloat(harga_persatuan) // Parse as float for currency
@@ -227,15 +224,6 @@ export default function InputProduksiForm({
                         ))}
                     </select>
 
-                    <label>Ukuran</label>
-                    <input
-                        type="text"
-                        value={ukuran}
-                        onChange={(e) => setUkuran(e.target.value)}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                    />
-
                     <label>Kualitas</label>
                     <select
                         value={isCustomKualitas ? "Isi Sendiri" : kualitas}
@@ -276,7 +264,7 @@ export default function InputProduksiForm({
                         min="0" // Allow 0 as input
                     />
 
-                    <label>Harga per Satuan</label>
+                    <label>Harga per kg</label>
                     <input
                         type="number" // Changed to number type
                         value={harga_persatuan}

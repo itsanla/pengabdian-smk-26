@@ -67,10 +67,9 @@ export default function Produksi() {
         { header: "Kode Produksi", accessorKey: "kode_produksi" as keyof ProduksiType },
         { header: "Asal Produksi", accessorKey: "asal_produksi" as keyof ProduksiType, cell: (item: ProduksiType) => item.asal_produksi.nama },
         { header: "Jenis Komoditas", accessorKey: "komoditas" as keyof ProduksiType, cell: (item: ProduksiType) => item.komoditas?.nama || "" },
-        { header: "Ukuran", accessorKey: "ukuran" as keyof ProduksiType },
         { header: "Kualitas", accessorKey: "kualitas" as keyof ProduksiType },
         {
-            header: "Harga per Satuan",
+            header: "Harga per kg",
             accessorKey: "harga_persatuan" as keyof ProduksiType,
             cell: (item: ProduksiType) => (
                 <span className="font-medium">

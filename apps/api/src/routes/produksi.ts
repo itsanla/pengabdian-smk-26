@@ -138,7 +138,6 @@ produksiApp.post("/", async (c) => {
       "kode_produksi",
       "Kode produksi wajib diisi",
     );
-    v.required(body.ukuran, "ukuran", "Ukuran wajib diisi");
     v.required(body.kualitas, "kualitas", "Kualitas wajib diisi");
 
     if (v.hasErrors()) {
@@ -183,7 +182,7 @@ produksiApp.post("/", async (c) => {
         id_asal,
         id_komoditas,
         kode_produksi: body.kode_produksi!,
-        ukuran: body.ukuran!,
+        ukuran: body.ukuran ?? "",
         kualitas: body.kualitas!,
         jumlah: jumlah_diproduksi,
         harga_persatuan,
@@ -219,7 +218,6 @@ produksiApp.put("/:id", async (c) => {
     v.required(body.id_asal, "id_asal", "ID asal produksi wajib diisi");
     v.isIntGt(body.id_asal, 0, "id_asal");
     v.required(body.kode_produksi, "kode_produksi");
-    v.required(body.ukuran, "ukuran");
     v.required(body.kualitas, "kualitas");
     if (v.hasErrors()) {
       return c.json(
@@ -264,7 +262,7 @@ produksiApp.put("/:id", async (c) => {
       .set({
         id_asal: Number(body.id_asal),
         kode_produksi: body.kode_produksi!,
-        ukuran: body.ukuran!,
+        ukuran: body.ukuran ?? "",
         kualitas: body.kualitas!,
         jumlah,
         harga_persatuan,

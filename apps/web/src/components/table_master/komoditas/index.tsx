@@ -71,7 +71,6 @@ export default function Komoditas() {
         },
         { header: "Jenis Komoditas", accessorKey: "jenis" as keyof KomoditasType, cell: (item: KomoditasType) => item.jenis.name },
         { header: "Nama", accessorKey: "nama" as keyof KomoditasType },
-        { header: "Satuan", accessorKey: "satuan" as keyof KomoditasType },
         { header: "Jumlah", accessorKey: "jumlah" as keyof KomoditasType },
         {
             header: "Aksi",
