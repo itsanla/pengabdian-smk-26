@@ -136,41 +136,21 @@ export default function Penjualan() {
           : "-",
     },
     {
-      header: "Jumlah Produk",
-      accessorKey: "jumlah_produk" as keyof PenjualanType,
-      cell: (item: PenjualanType) => (
-        <span className="font-medium">
-          {item.jumlah_produk ?? item.items?.length ?? 0} produk
-        </span>
-      ),
-    },
-    {
       header: "Kode Produksi",
       accessorKey: "kode_produksi_list" as keyof PenjualanType,
       cell: (item: PenjualanType) => {
         const kodeList = item.kode_produksi_list ?? [];
-        const visible = kodeList.slice(0, 2);
-        const moreCount = Math.max(kodeList.length - visible.length, 0);
-
+        if (kodeList.length === 0) return <span className="text-gray-500">-</span>;
         return (
-          <div className="flex flex-wrap items-center gap-2">
-            {visible.length === 0 ? (
-              <span className="text-gray-500">-</span>
-            ) : (
-              visible.map((kode) => (
-                <span
-                  key={`${item.id}-${kode}`}
-                  className="rounded bg-blue-100 px-2 py-1 text-xs font-mono text-blue-800"
-                >
-                  {kode}
-                </span>
-              ))
-            )}
-            {moreCount > 0 ? (
-              <span className="text-xs text-gray-500">
-                +{moreCount} lainnya
+          <div className="flex flex-col gap-1">
+            {kodeList.map((kode) => (
+              <span
+                key={`${item.id}-${kode}`}
+                className="rounded bg-blue-100 px-2 py-1 text-xs font-mono text-blue-800 w-fit"
+              >
+                {kode}
               </span>
-            ) : null}
+            ))}
           </div>
         );
       },
@@ -183,6 +163,26 @@ export default function Penjualan() {
           {item.total_harga
             ? `Rp. ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(item.total_harga)}`
             : "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Berat (kg)",
+      accessorKey: "total_berat_kg" as keyof PenjualanType,
+      cell: (item: PenjualanType) => (
+        <span className="font-medium">
+          {item.total_berat_kg != null && item.total_berat_kg > 0
+            ? `${item.total_berat_kg} kg`
+            : "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Jumlah Buah",
+      accessorKey: "jumlah_produk" as keyof PenjualanType,
+      cell: (item: PenjualanType) => (
+        <span className="font-medium">
+          {item.jumlah_produk ?? item.items?.length ?? 0} buah
         </span>
       ),
     },
@@ -204,7 +204,6 @@ export default function Penjualan() {
         );
       },
     },
-    { header: "Keterangan", accessorKey: "keterangan" as keyof PenjualanType },
     {
       header: "Aksi",
       accessorKey: "id" as keyof PenjualanType,
@@ -390,8 +389,14 @@ export default function Penjualan() {
                 </p>
                 <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
                   {penjualanDetails[expandedPenjualanId]?.items?.length ?? 0}{" "}
-                  item
+                  produk
                 </p>
+                {penjualanDetails[expandedPenjualanId]?.keterangan && (
+                  <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Keterangan:</span>{" "}
+                    {penjualanDetails[expandedPenjualanId]!.keterangan}
+                  </p>
+                )}
               </div>
               <button
                 type="button"

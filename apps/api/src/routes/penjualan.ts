@@ -756,6 +756,108 @@ penjualanApp.post("/", async (c) => {
   }
 });
 
+// GET /penjualan/export/bulan — daftar bulan yang tersedia di DB
+penjualanApp.get("/export/bulan", async (c) => {
+  try {
+    const db = getDb(c.env);
+    const rows = await db
+      .select({
+        bulan: sql<string>`strftime('%Y-%m', datetime(${penjualanTable.createdAt}, 'unixepoch'))`,
+      })
+      .from(penjualanTable)
+      .groupBy(sql`strftime('%Y-%m', datetime(${penjualanTable.createdAt}, 'unixepoch'))`)
+      .orderBy(desc(sql`strftime('%Y-%m', datetime(${penjualanTable.createdAt}, 'unixepoch'))`))
+      .all();
+
+    return c.json({
+      success: true,
+      data: (rows as Array<{ bulan: string }>).map((r) => r.bulan).filter(Boolean),
+    });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
+// GET /penjualan/export/data?bulan=YYYY-MM — data penjualan untuk satu bulan
+penjualanApp.get("/export/data", async (c) => {
+  try {
+    const bulan = c.req.query("bulan");
+    if (!bulan || !/^\d{4}-\d{2}$/.test(bulan)) {
+      throw new AppError("Parameter bulan tidak valid. Format: YYYY-MM", 400);
+    }
+
+    const db = getDb(c.env);
+
+    const headers = await db
+      .select({
+        id: penjualanTable.id,
+        total_harga: penjualanTable.total_harga,
+        keterangan: penjualanTable.keterangan,
+        createdAt: penjualanTable.createdAt,
+      })
+      .from(penjualanTable)
+      .where(
+        sql`strftime('%Y-%m', datetime(${penjualanTable.createdAt}, 'unixepoch')) = ${bulan}`,
+      )
+      .orderBy(asc(penjualanTable.createdAt))
+      .all();
+
+    if (headers.length === 0) {
+      return c.json({ success: true, data: [] });
+    }
+
+    const headerIds = (headers as Array<{ id: number }>).map((h) => h.id);
+
+    const itemRows = await db
+      .select({
+        id_penjualan: penjualanItemTabel.id_penjualan,
+        id_produksi: penjualanItemTabel.id_produksi,
+        berat: penjualanItemTabel.berat,
+      })
+      .from(penjualanItemTabel)
+      .where(inArray(penjualanItemTabel.id_penjualan, headerIds))
+      .all();
+
+    const produksiIds = Array.from(
+      new Set((itemRows as Array<{ id_produksi: number }>).map((r) => r.id_produksi)),
+    );
+    const produksiRows = produksiIds.length
+      ? await db
+          .select({ id: produksiTable.id, kode_produksi: produksiTable.kode_produksi })
+          .from(produksiTable)
+          .where(inArray(produksiTable.id, produksiIds))
+          .all()
+      : [];
+
+    const produksiMap = new Map<number, string>(
+      (produksiRows as Array<{ id: number; kode_produksi: string }>).map((r) => [r.id, r.kode_produksi]),
+    );
+
+    const itemsByPenjualan = new Map<number, Array<{ id_produksi: number; berat: number }>>();
+    for (const item of itemRows as Array<{ id_penjualan: number; id_produksi: number; berat: number }>) {
+      const current = itemsByPenjualan.get(item.id_penjualan) ?? [];
+      current.push(item);
+      itemsByPenjualan.set(item.id_penjualan, current);
+    }
+
+    const data = (headers as Array<{ id: number; total_harga: number; keterangan: string; createdAt: number }>).map((header) => {
+      const relatedItems = itemsByPenjualan.get(header.id) ?? [];
+      return {
+        ...convertTimestamps(header),
+        jumlah_produk: relatedItems.length,
+        kode_produksi_list: relatedItems
+          .map((item) => produksiMap.get(item.id_produksi))
+          .filter((k): k is string => Boolean(k)),
+        total_berat_kg: relatedItems.reduce((sum, item) => sum + item.berat, 0),
+      };
+    });
+
+    return c.json({ success: true, data });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
 penjualanApp.get("/:id", async (c) => {
   try {
     const id = c.req.param("id");

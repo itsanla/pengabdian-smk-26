@@ -11,78 +11,55 @@ interface ExportPenjualanModalProps {
 }
 
 export default function ExportPenjualanModal({
-  penjualanList,
   onClose,
   isOpen,
 }: ExportPenjualanModalProps) {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [loading, setLoading] = useState(false);
+  const [availableMonths, setAvailableMonths] = useState<string[]>([]);
+  const [loadingMonths, setLoadingMonths] = useState(false);
 
   const monthFormatter = useMemo(
     () => new Intl.DateTimeFormat("id-ID", { month: "long", year: "numeric" }),
     [],
   );
 
-  const getMonthKey = (value: string | number | Date) => {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return null;
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    return `${year}-${month}`;
-  };
-
   const monthOptions = useMemo(() => {
-    if (!Array.isArray(penjualanList)) return [];
-
-    const uniqueMonths = new Set<string>();
-    for (const item of penjualanList) {
-      const monthKey = getMonthKey(item?.createdAt);
-      if (monthKey) uniqueMonths.add(monthKey);
-    }
-
-    return Array.from(uniqueMonths)
-      .sort((a, b) => b.localeCompare(a))
-      .map((value) => {
-        const [year, month] = value.split("-").map(Number);
-        const date = new Date(year, month - 1, 1);
-        return { value, label: monthFormatter.format(date) };
-      });
-  }, [penjualanList, monthFormatter]);
+    return availableMonths.map((value) => {
+      const [year, month] = value.split("-").map(Number);
+      const date = new Date(year, month - 1, 1);
+      return { value, label: monthFormatter.format(date) };
+    });
+  }, [availableMonths, monthFormatter]);
 
   useEffect(() => {
     if (!isOpen) return;
+
+    setLoadingMonths(true);
+    apiRequest({ endpoint: "/penjualan/export/bulan" })
+      .then((data: string[]) => {
+        setAvailableMonths(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setAvailableMonths([]))
+      .finally(() => setLoadingMonths(false));
+  }, [isOpen]);
+
+  useEffect(() => {
     if (monthOptions.length === 0) {
       setSelectedMonth("");
       return;
     }
-    const isValidSelection = monthOptions.some((m) => m.value === selectedMonth);
-    if (!isValidSelection) setSelectedMonth(monthOptions[0].value);
-  }, [isOpen, monthOptions, selectedMonth]);
+    const isValid = monthOptions.some((m) => m.value === selectedMonth);
+    if (!isValid) setSelectedMonth(monthOptions[0].value);
+  }, [monthOptions]);
 
   if (!isOpen) return null;
 
-  // Fetch semua data penjualan (semua halaman) dari API
-  const fetchAllPenjualan = async (): Promise<any[]> => {
-    const allData: any[] = [];
-    let page = 1;
-    let totalPages = 1;
-
-    do {
-      const response = await apiRequest({
-        endpoint: `/penjualan?pageSize=100&page=${page}`,
-        returnFullResponse: true,
-      });
-
-      if (response?.data && Array.isArray(response.data)) {
-        allData.push(...response.data);
-        totalPages = response.meta?.totalPages ?? 1;
-      } else {
-        break;
-      }
-      page++;
-    } while (page <= totalPages);
-
-    return allData;
+  const fetchMonthData = async (): Promise<any[]> => {
+    const data = await apiRequest({
+      endpoint: `/penjualan/export/data?bulan=${selectedMonth}`,
+    });
+    return Array.isArray(data) ? data : [];
   };
 
   const handleExport = async (e: React.FormEvent) => {
@@ -96,10 +73,7 @@ export default function ExportPenjualanModal({
     setLoading(true);
 
     try {
-      const allData = await fetchAllPenjualan();
-      const filteredData = allData.filter(
-        (item) => getMonthKey(item.createdAt) === selectedMonth,
-      );
+      const filteredData = await fetchMonthData();
 
       if (filteredData.length === 0) {
         alert("Tidak ada data penjualan pada bulan ini.");
@@ -119,7 +93,7 @@ export default function ExportPenjualanModal({
         No: index + 1,
         Tanggal: new Date(item.createdAt).toLocaleDateString("id-ID"),
         Bulan: new Date(item.createdAt).toLocaleString("default", { month: "short" }),
-        "Jumlah Produk": item?.jumlah_produk ?? item?.items?.length ?? 0,
+        "Jumlah Produk": item?.jumlah_produk ?? 0,
         "Kode Produksi":
           Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
             ? item.kode_produksi_list.join(", ")
@@ -129,7 +103,6 @@ export default function ExportPenjualanModal({
         Keterangan: item?.keterangan || "-",
       }));
 
-      // Baris total di akhir
       excelData.push({
         No: "" as any,
         Tanggal: "",
@@ -143,7 +116,7 @@ export default function ExportPenjualanModal({
 
       const worksheet = XLSX.utils.json_to_sheet(excelData);
       const range = XLSX.utils.decode_range(worksheet["!ref"]!);
-      const totalRowIndex = range.e.r; // indeks baris terakhir (baris total)
+      const totalRowIndex = range.e.r;
 
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
@@ -213,10 +186,7 @@ export default function ExportPenjualanModal({
     setLoading(true);
 
     try {
-      const allData = await fetchAllPenjualan();
-      const filteredData = allData.filter(
-        (item) => getMonthKey(item.createdAt) === selectedMonth,
-      );
+      const filteredData = await fetchMonthData();
 
       if (filteredData.length === 0) {
         alert("Tidak ada data penjualan pada bulan ini.");
@@ -239,7 +209,7 @@ export default function ExportPenjualanModal({
         index + 1,
         new Date(item.createdAt).toLocaleDateString("id-ID"),
         new Date(item.createdAt).toLocaleString("default", { month: "short" }),
-        item?.jumlah_produk ?? item?.items?.length ?? 0,
+        item?.jumlah_produk ?? 0,
         Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
           ? item.kode_produksi_list.join(", ")
           : "-",
@@ -254,7 +224,6 @@ export default function ExportPenjualanModal({
       const [year, month] = selectedMonth.split("-").map(Number);
       const bulanLabel = monthFormatter.format(new Date(year, month - 1, 1));
 
-      // Judul laporan
       doc.setFont("helvetica", "bold");
       doc.setFontSize(13);
       doc.text(`Laporan Penjualan - ${bulanLabel}`, 14, 14);
@@ -265,16 +234,7 @@ export default function ExportPenjualanModal({
         ],
         body: pdfData,
         foot: [
-          [
-            "",
-            "",
-            "",
-            "",
-            "TOTAL",
-            fmt(totalHarga),
-            `${totalBerat} kg`,
-            "",
-          ],
+          ["", "", "", "", "TOTAL", fmt(totalHarga), `${totalBerat} kg`, ""],
         ],
         styles: {
           font: "helvetica",
@@ -327,10 +287,12 @@ export default function ExportPenjualanModal({
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
             className="w-full p-2 border rounded-md dark:bg-gray-900 dark:text-white"
-            disabled={monthOptions.length === 0}
+            disabled={loadingMonths || loading || monthOptions.length === 0}
           >
-            {monthOptions.length === 0 ? (
-              <option value="">Belum ada data bulan</option>
+            {loadingMonths ? (
+              <option value="">Memuat daftar bulan...</option>
+            ) : monthOptions.length === 0 ? (
+              <option value="">Belum ada data</option>
             ) : null}
             {monthOptions.map((month) => (
               <option key={month.value} value={month.value}>
@@ -350,16 +312,16 @@ export default function ExportPenjualanModal({
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="bg-green-600 text-white px-4 py-2 rounded"
+              disabled={loading || loadingMonths || !selectedMonth}
+              className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
             >
               {loading ? "Mengekspor..." : "Excel"}
             </button>
             <button
               type="button"
-              disabled={loading}
+              disabled={loading || loadingMonths || !selectedMonth}
               onClick={handleExportPDF}
-              className="bg-red-600 text-white px-4 py-2 rounded"
+              className="bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
             >
               {loading ? "Mengekspor..." : "PDF"}
             </button>
