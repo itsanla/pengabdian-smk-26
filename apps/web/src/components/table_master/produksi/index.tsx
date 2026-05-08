@@ -74,8 +74,8 @@ export default function Produksi() {
             cell: (item: ProduksiType) => (
                 <span className="font-medium">
                     {item.harga_persatuan
-                        ? `Rp${new Intl.NumberFormat("id-ID").format(item.harga_persatuan)},-`
-                        : "Rp0,-"}
+                        ? `Rp ${new Intl.NumberFormat("id-ID").format(item.harga_persatuan)}`
+                        : "Rp 0"}
                 </span>
             ),
         },

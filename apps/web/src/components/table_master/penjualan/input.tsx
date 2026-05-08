@@ -541,20 +541,16 @@ export default function InputPenjualanForm({
                   <div className="md:col-span-2">
                     <label className="mb-1 block text-sm">Subtotal</label>
                     <div className="rounded border bg-gray-50 px-2 py-2 text-sm dark:border-gray-600 dark:bg-gray-800">
-                      Rp
-                      {new Intl.NumberFormat("id-ID").format(
+                      Rp {new Intl.NumberFormat("id-ID").format(
                         item.total_harga || 0,
                       )}
-                      ,-
                       {item.berat > 0 && item.id_produksi ? (
                         <span className="ml-2 text-gray-500">
-                          ({item.berat} kg × Rp
-                          {new Intl.NumberFormat("id-ID").format(
+                          ({item.berat} kg × Rp {new Intl.NumberFormat("id-ID").format(
                             produksiList.find(
                               (p) => Number(p.id) === item.id_produksi,
                             )?.harga_persatuan ?? 0,
-                          )}
-                          /kg)
+                          )}/kg)
                         </span>
                       ) : null}
                     </div>
@@ -609,11 +605,9 @@ export default function InputPenjualanForm({
           )}
 
           <div className="rounded border bg-gray-50 px-3 py-2 text-sm font-medium dark:border-gray-700 dark:bg-gray-800">
-            Total transaksi: Rp
-            {new Intl.NumberFormat("id-ID").format(
+            Total transaksi: Rp {new Intl.NumberFormat("id-ID").format(
               formItems.reduce((sum, item) => sum + item.total_harga, 0),
             )}
-            ,-
           </div>
 
           {formMode === "create" && (

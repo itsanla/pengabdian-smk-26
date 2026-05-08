@@ -80,10 +80,14 @@ export default function ExportPenjualanModal({
         return;
       }
 
+      const fmtRp = (n: number) =>
+        `Rp ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
+
       const totalHarga = filteredData.reduce(
         (sum, item) => sum + (item?.total_harga ?? 0),
         0,
       );
+
       const totalBerat = filteredData.reduce(
         (sum, item) => sum + (item?.total_berat_kg ?? 0),
         0,
@@ -98,7 +102,7 @@ export default function ExportPenjualanModal({
           Array.isArray(item?.kode_produksi_list) && item.kode_produksi_list.length > 0
             ? item.kode_produksi_list.join(", ")
             : "-",
-        "Total Harga": item?.total_harga ?? 0,
+        "Total Harga": fmtRp(item?.total_harga ?? 0),
         "Berat (kg)": item?.total_berat_kg ?? 0,
         Keterangan: item?.keterangan || "-",
       }));
@@ -109,7 +113,7 @@ export default function ExportPenjualanModal({
         Bulan: "",
         "Jumlah Produk": "" as any,
         "Kode Produksi": "TOTAL",
-        "Total Harga": totalHarga,
+        "Total Harga": fmtRp(totalHarga),
         "Berat (kg)": totalBerat,
         Keterangan: "",
       });
@@ -194,12 +198,13 @@ export default function ExportPenjualanModal({
       }
 
       const fmt = (n: number) =>
-        `Rp${new Intl.NumberFormat("id-ID").format(n)},-`;
+        `Rp ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)}`;
 
       const totalHarga = filteredData.reduce(
         (sum, item) => sum + (item?.total_harga ?? 0),
         0,
       );
+
       const totalBerat = filteredData.reduce(
         (sum, item) => sum + (item?.total_berat_kg ?? 0),
         0,

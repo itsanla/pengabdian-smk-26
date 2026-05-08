@@ -161,7 +161,7 @@ export default function Penjualan() {
       cell: (item: PenjualanType) => (
         <span className="font-medium">
           {item.total_harga
-            ? `Rp. ${new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(item.total_harga)}`
+            ? `Rp ${new Intl.NumberFormat("id-ID").format(item.total_harga)}`
             : "-"}
         </span>
       ),
@@ -536,18 +536,14 @@ export default function Penjualan() {
                           }}
                         >
                           <span>
-                            Rp
-                            {new Intl.NumberFormat("id-ID").format(
+                            Rp {new Intl.NumberFormat("id-ID").format(
                               detailItem.harga_satuan,
-                            )}
-                            ,-/kg
+                            )}/kg
                           </span>
                           <span style={{ fontWeight: 600, color: "#111827" }}>
-                            Subtotal Rp
-                            {new Intl.NumberFormat("id-ID").format(
+                            Subtotal Rp {new Intl.NumberFormat("id-ID").format(
                               detailItem.sub_total,
                             )}
-                            ,-
                           </span>
                         </div>
                       </div>

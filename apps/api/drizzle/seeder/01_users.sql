@@ -1,13 +1,12 @@
 -- Seed Users
--- Passwords hashed with PBKDF2-SHA256 (100k iterations, 16B salt)
--- admin/guru/kepsek: Password123
--- siswa: 123123123
+-- Passwords hashed with PBKDF2-SHA256 (100k iterations, fixed salt)
+-- Semua user: password = "password"
 
 DELETE FROM User;
 
 INSERT INTO User (nama, email, username, password, role) VALUES
-  ('Admin',         'admin@gmail.com',  'admin',  'e310c6ae67d3781fe1143cac66fe583e:8ed39813bb4305f44a4968f92c323cb7ca1c191edf7d246d5369aaa3ef664837', 'admin'),
-  ('Guru',          'guru@gmail.com',   'guru',   'e310c6ae67d3781fe1143cac66fe583e:8ed39813bb4305f44a4968f92c323cb7ca1c191edf7d246d5369aaa3ef664837', 'guru'),
-  ('Kepala Sekolah','kepsek@gmail.com', 'kepsek', 'e310c6ae67d3781fe1143cac66fe583e:8ed39813bb4305f44a4968f92c323cb7ca1c191edf7d246d5369aaa3ef664837', 'kepsek'),
-  ('Ucok',          'ucok@gmail.com',   'ucok',   'aeec0d351fac0140570a7501e205bacc:1c74fd30bfd0259daaed5c3e491b52c7f55108d15c0efaee8205a85c05c8f534', 'siswa'),
-  ('Siti',          'siti@gmail.com',   'siti',   'aeec0d351fac0140570a7501e205bacc:1c74fd30bfd0259daaed5c3e491b52c7f55108d15c0efaee8205a85c05c8f534', 'siswa');
+  ('Admin',         'admin@gmail.com',  'admin',  '0102030405060708090a0b0c0d0e0f10:edcc81643686f4e956b14698b0d2460877a2fdc111c51fc514f7d1af547803d3', 'admin'),
+  ('Guru',          'guru@gmail.com',   'guru',   '0102030405060708090a0b0c0d0e0f10:edcc81643686f4e956b14698b0d2460877a2fdc111c51fc514f7d1af547803d3', 'guru'),
+  ('Kepala Sekolah','kepsek@gmail.com', 'kepsek', '0102030405060708090a0b0c0d0e0f10:edcc81643686f4e956b14698b0d2460877a2fdc111c51fc514f7d1af547803d3', 'kepsek'),
+  ('Ucok',          'ucok@gmail.com',   'ucok',   '0102030405060708090a0b0c0d0e0f10:edcc81643686f4e956b14698b0d2460877a2fdc111c51fc514f7d1af547803d3', 'siswa'),
+  ('Siti',          'siti@gmail.com',   'siti',   '0102030405060708090a0b0c0d0e0f10:edcc81643686f4e956b14698b0d2460877a2fdc111c51fc514f7d1af547803d3', 'siswa');

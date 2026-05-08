@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1776523642375,
-      "tag": "0000_initial",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1745280000000,
-      "tag": "0001_add_print_preference",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1746662400000,
-      "tag": "0005_add_berat_to_penjualan_item",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1746748800000,
-      "tag": "0006_add_payment_status",
+      "when": 1778254190084,
+      "tag": "0000_elite_gauntlet",
       "breakpoints": true
     }
   ]
