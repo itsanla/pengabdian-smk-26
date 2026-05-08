@@ -86,13 +86,13 @@ class ApiService {
   }
 
   Future<AuthSession> login({
-    required String email,
+    required String username,
     required String password,
   }) async {
     final response = await _client.post(
       _uri('/auth/login'),
       headers: _jsonHeaders(),
-      body: jsonEncode({'email': email, 'password': password}),
+      body: jsonEncode({'username': username, 'password': password}),
     );
 
     final body = _decodeBody(response);

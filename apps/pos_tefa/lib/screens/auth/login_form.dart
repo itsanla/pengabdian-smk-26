@@ -18,14 +18,14 @@ class LoginForm extends StatefulWidget {
 
 class LoginFormState extends State<LoginForm> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -36,7 +36,7 @@ class LoginFormState extends State<LoginForm> {
     }
 
     await context.read<AuthProvider>().login(
-      email: _emailController.text.trim(),
+      username: _usernameController.text.trim(),
       password: _passwordController.text,
     );
   }
@@ -78,20 +78,16 @@ class LoginFormState extends State<LoginForm> {
           ),
           const SizedBox(height: 24),
           TextFormField(
-            controller: _emailController,
-            keyboardType: TextInputType.emailAddress,
+            controller: _usernameController,
             textInputAction: TextInputAction.next,
             decoration: const InputDecoration(
-              labelText: 'Email',
-              prefixIcon: Icon(Icons.email_outlined),
+              labelText: 'Username',
+              prefixIcon: Icon(Icons.person),
               border: OutlineInputBorder(),
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
-                return 'Email wajib diisi';
-              }
-              if (!value.contains('@')) {
-                return 'Format email tidak valid';
+                return 'Username wajib diisi';
               }
               return null;
             },

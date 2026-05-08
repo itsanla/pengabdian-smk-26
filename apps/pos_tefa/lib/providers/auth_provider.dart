@@ -38,7 +38,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> login({required String email, required String password}) async {
+  Future<bool> login({
+    required String username,
+    required String password,
+  }) async {
     if (_isAuthenticating) {
       return false;
     }
@@ -48,7 +51,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final session = await _apiService.login(email: email, password: password);
+      final session = await _apiService.login(
+        username: username,
+        password: password,
+      );
       await _authStorage.saveSession(session);
       _session = session;
       return true;
