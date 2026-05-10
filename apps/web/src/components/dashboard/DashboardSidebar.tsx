@@ -91,7 +91,7 @@ export default function DashboardSidebar({
       childern: [
         { name: "Daftar Barang", href: "/dashboard/gudang/barang" },
         { name: "Barang Masuk/Keluar", href: "/dashboard/gudang/transaksi" },
-        // { name: "Bahan Baku", href: "/dashboard/gudang/bahan_baku" },
+        { name: "Bahan Baku", href: "/dashboard/gudang/bahan_baku" },
       ],
     },
     {
