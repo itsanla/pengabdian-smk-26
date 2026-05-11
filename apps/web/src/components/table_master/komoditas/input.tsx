@@ -158,7 +158,8 @@ export default function InputKomoditasForm({
                     newErrors[error.path] = error.msg;
                 });
                 setErrors(newErrors);
-                toast.error(err.response.data.message || "Validasi gagal");
+                const firstError = err.response.data.errors[0]?.msg;
+                toast.error(firstError || err.response.data.message || "Validasi gagal");
             } else {
                 toast.error(err.message || "Terjadi kesalahan");
             }
@@ -177,36 +178,45 @@ export default function InputKomoditasForm({
                     <div className="flex items-center gap-4">
                         <label>Jenis Komoditas</label>
                     </div>
-                    <select
-                        value={id_jenis}
-                        onChange={(e) => setIdJenis(e.target.value)}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full"
-                        required
-                    >
-                        <option value="">Pilih Jenis Komoditas</option>
-                        {jenisList.map((jenis) => (
-                            <option key={jenis.id} value={jenis.id}>
-                                {jenis.name}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex flex-col gap-1">
+                        <select
+                            value={id_jenis}
+                            onChange={(e) => { setIdJenis(e.target.value); setErrors(prev => ({ ...prev, id_jenis: "" })); }}
+                            className={`border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white w-full ${errors.id_jenis ? "border-red-500" : ""}`}
+                            required
+                        >
+                            <option value="">Pilih Jenis Komoditas</option>
+                            {jenisList.map((jenis) => (
+                                <option key={jenis.id} value={jenis.id}>
+                                    {jenis.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.id_jenis && <p className="text-xs text-red-500">{errors.id_jenis}</p>}
+                    </div>
 
                     <label>Nama</label>
-                    <input
-                        type="text"
-                        value={nama}
-                        onChange={(e) => setNama(e.target.value)}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        required
-                    />
+                    <div className="flex flex-col gap-1">
+                        <input
+                            type="text"
+                            value={nama}
+                            onChange={(e) => { setNama(e.target.value); setErrors(prev => ({ ...prev, nama: "" })); }}
+                            className={`border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors.nama ? "border-red-500" : ""}`}
+                            required
+                        />
+                        {errors.nama && <p className="text-xs text-red-500">{errors.nama}</p>}
+                    </div>
 
                     <label>Deskripsi</label>
-                    <textarea
-                        value={deskripsi}
-                        onChange={(e) => setDeskripsi(e.target.value)}
-                        className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-y"
-                        rows={4}
-                    />
+                    <div className="flex flex-col gap-1">
+                        <textarea
+                            value={deskripsi}
+                            onChange={(e) => { setDeskripsi(e.target.value); setErrors(prev => ({ ...prev, deskripsi: "" })); }}
+                            className={`border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-y ${errors.deskripsi ? "border-red-500" : ""}`}
+                            rows={4}
+                        />
+                        {errors.deskripsi && <p className="text-xs text-red-500">{errors.deskripsi}</p>}
+                    </div>
 
 
                     <label>Upload Gambar</label>
@@ -217,18 +227,19 @@ export default function InputKomoditasForm({
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                    // Check file size (10MB = 10485760 bytes)
                                     if (file.size > 10485760) {
                                         toast.error('Ukuran file terlalu besar! Maksimal 10 MB');
-                                        e.target.value = ''; // Reset input
-                                        setFoto(null); // Clear state
+                                        e.target.value = '';
+                                        setFoto(null);
                                         return;
                                     }
                                     setFoto(file);
+                                    setErrors(prev => ({ ...prev, foto: "" }));
                                 }
                             }}
-                            className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            className={`border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white file:mr-4 file:py-1 file:px-2 file:rounded file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 ${errors.foto ? "border-red-500" : ""}`}
                         />
+                        {errors.foto && <p className="text-xs text-red-500">{errors.foto}</p>}
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                             Format: JPG, PNG, JPEG. Maksimal ukuran: 10 MB
                         </p>

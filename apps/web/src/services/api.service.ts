@@ -43,10 +43,11 @@ export const apiRequest = async ({
 
     return returnFullResponse ? res.data : res.data.data;
   } catch (error: any) {
-    console.log("error", error.response?.data.errors)
-    throw new Error(
+    const apiError: any = new Error(
       error.response?.data?.message || error.response?.error || error.message || 'Failed to fetch'
     );
+    apiError.response = error.response;
+    throw apiError;
   }
 };
 
