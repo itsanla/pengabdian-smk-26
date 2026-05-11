@@ -131,3 +131,15 @@ export interface BahanBaku {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface StokHistoriProduksi {
+  id: number;
+  id_produksi: number | null;
+  kode_produksi: string;
+  jumlah_sebelum: number;
+  jumlah_sesudah: number;
+  selisih: number;
+  tipe: string;
+  keterangan: string;
+  createdAt: string;
+}

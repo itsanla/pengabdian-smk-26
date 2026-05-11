@@ -76,7 +76,8 @@ export default function InputProduksiForm({
     const [kualitas, setKualitas] = useState("");
     const [jumlah_diproduksi, setJumlahDiproduksi] = useState("");
     const [harga_persatuan, setHargaPersatuan] = useState("");
-    const [isCustomKualitas, setIsCustomKualitas] = useState(false); // New state for custom kualitas input
+    const [isCustomKualitas, setIsCustomKualitas] = useState(false);
+    const [keterangan, setKeterangan] = useState("");
     const [loading, setLoading] = useState(false);
     const [satuan, setSatuan] = useState("Kg");
 
@@ -89,15 +90,14 @@ export default function InputProduksiForm({
         fetchDataKomoditas();
 
         if (formMode === "update" && initialData) {
-            console.log("initialData:", initialData);
             setId_Asal(initialData.id_asal?.toString() || "");
             setIdKomoditas(initialData.id_komoditas?.toString() || "");
             setKode_Produksi(initialData.kode_produksi || "");
             setKualitas(initialData.kualitas || "");
             setJumlahDiproduksi(initialData.jumlah?.toString() || "");
             setHargaPersatuan(initialData.harga_persatuan?.toString() || "");
-            // Set isCustomKualitas based on initialData.kualitas if it's not 'Medium' or 'Premium'
             setIsCustomKualitas(initialData.kualitas && !["Medium", "Premium"].includes(initialData.kualitas));
+            setKeterangan("");
         }
     }, [formMode, initialData]);
 
@@ -129,14 +129,17 @@ export default function InputProduksiForm({
         e.preventDefault();
         setLoading(true);
 
-        const payload = {
+        const payload: Record<string, unknown> = {
             id_asal: parseInt(id_asal),
             id_komoditas: parseInt(id_komoditas),
             kode_produksi,
             kualitas,
             jumlah_diproduksi: parseInt(jumlah_diproduksi),
-            harga_persatuan: parseFloat(harga_persatuan) // Parse as float for currency
+            harga_persatuan: parseFloat(harga_persatuan),
         };
+        if (formMode === "update") {
+            payload.keterangan = keterangan;
+        }
 
         try {
         
@@ -257,7 +260,7 @@ export default function InputProduksiForm({
                     <label>Jumlah</label>
                     <input
                         type="number" // Changed to number type
-                        placeholder={`Dalam ${satuan}`}
+                        placeholder={`Dalam buah`}
                         value={jumlah_diproduksi}
                         onChange={(e) => setJumlahDiproduksi(e.target.value)}
                         className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -272,6 +275,22 @@ export default function InputProduksiForm({
                         className="border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         min="0" // Allow 0 as input
                     />
+
+                    {formMode === "update" && (
+                        <>
+                            <label className="col-span-2 font-semibold text-sm text-gray-700 dark:text-gray-300 mt-2">
+                                Keterangan <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                value={keterangan}
+                                onChange={(e) => setKeterangan(e.target.value)}
+                                className="col-span-2 border rounded px-2 py-1 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white resize-none"
+                                rows={2}
+                                placeholder="Tuliskan alasan perubahan stok..."
+                                required
+                            />
+                        </>
+                    )}
 
                     <div className="col-span-2 mt-4 flex justify-end space-x-2">
                         <button

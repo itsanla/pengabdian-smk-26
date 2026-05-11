@@ -5,8 +5,8 @@ import {
   asalProduksiTable,
   komoditasTable,
   penjualanItemTabel,
-  penjualanTable,
   produksiTable,
+  stokHistoriProduksiTable,
 } from "../db/schema";
 import { Validator } from "../utils/validation";
 import { AppError, handleAnyError } from "../errors/app_error";
@@ -72,6 +72,36 @@ produksiApp.get("/", async (c) => {
       success: true,
       message: "Berhasil mengambil semua data produksi.",
       data,
+      meta: buildPaginationMeta(page, pageSize, totalItems),
+    });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
+produksiApp.get("/history", async (c) => {
+  try {
+    const db = getDb(c.env);
+    const { page, pageSize, offset } = parsePagination(c.req.query());
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(stokHistoriProduksiTable)
+      .get();
+    const totalItems = Number(totalRow?.count ?? 0);
+
+    const histories = await db
+      .select()
+      .from(stokHistoriProduksiTable)
+      .orderBy(desc(stokHistoriProduksiTable.createdAt))
+      .limit(pageSize)
+      .offset(offset)
+      .all();
+
+    return c.json({
+      success: true,
+      message: "Berhasil mengambil history stok produksi.",
+      data: histories.map((h) => convertTimestamps(h)),
       meta: buildPaginationMeta(page, pageSize, totalItems),
     });
   } catch (error) {
@@ -189,6 +219,16 @@ produksiApp.post("/", async (c) => {
       })
       .returning();
 
+    await db.insert(stokHistoriProduksiTable).values({
+      id_produksi: newProduksi.id,
+      kode_produksi: newProduksi.kode_produksi,
+      jumlah_sebelum: 0,
+      jumlah_sesudah: jumlah_diproduksi,
+      selisih: jumlah_diproduksi,
+      tipe: "buat",
+      keterangan: "Produksi baru dibuat",
+    });
+
     return c.json(
       {
         success: true,
@@ -212,6 +252,7 @@ produksiApp.put("/:id", async (c) => {
       kualitas?: string;
       jumlah_diproduksi?: number | string;
       harga_persatuan?: number | string;
+      keterangan?: string;
     }>();
 
     const v = new Validator();
@@ -219,6 +260,7 @@ produksiApp.put("/:id", async (c) => {
     v.isIntGt(body.id_asal, 0, "id_asal");
     v.required(body.kode_produksi, "kode_produksi");
     v.required(body.kualitas, "kualitas");
+    v.required(body.keterangan, "keterangan", "Keterangan wajib diisi saat update");
     if (v.hasErrors()) {
       return c.json(
         { success: false, message: "Validasi gagal", errors: v.getErrors() },
@@ -236,6 +278,7 @@ produksiApp.put("/:id", async (c) => {
 
     const jumlah = Number(body.jumlah_diproduksi);
     const harga_persatuan = Number(body.harga_persatuan);
+    const selisih = jumlah - produksi.jumlah;
 
     if (produksi.id_komoditas) {
       const komoditas = await db
@@ -245,7 +288,6 @@ produksiApp.put("/:id", async (c) => {
         .get();
       if (!komoditas) throw new AppError("Komoditas tidak ditemukan", 404);
 
-      const selisih = jumlah - produksi.jumlah;
       if (selisih !== 0) {
         await db
           .update(komoditasTable)
@@ -271,6 +313,16 @@ produksiApp.put("/:id", async (c) => {
       .where(eq(produksiTable.id, id))
       .returning();
 
+    await db.insert(stokHistoriProduksiTable).values({
+      id_produksi: produksi.id,
+      kode_produksi: updated.kode_produksi,
+      jumlah_sebelum: produksi.jumlah,
+      jumlah_sesudah: jumlah,
+      selisih,
+      tipe: selisih > 0 ? "tambah" : selisih < 0 ? "kurang" : "update",
+      keterangan: body.keterangan!,
+    });
+
     return c.json({
       success: true,
       message: `Berhasil memperbarui produksi: ${body.kode_produksi} -> ${updated.kode_produksi}`,
@@ -291,6 +343,16 @@ produksiApp.delete("/:id", async (c) => {
       .where(eq(produksiTable.id, id))
       .get();
     if (!produksi) throw new AppError("Produksi tidak ditemukan", 404);
+
+    await db.insert(stokHistoriProduksiTable).values({
+      id_produksi: produksi.id,
+      kode_produksi: produksi.kode_produksi,
+      jumlah_sebelum: produksi.jumlah,
+      jumlah_sesudah: 0,
+      selisih: -produksi.jumlah,
+      tipe: "hapus",
+      keterangan: "Produksi dihapus",
+    });
 
     if (produksi.id_komoditas) {
       await db

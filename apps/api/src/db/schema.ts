@@ -262,6 +262,20 @@ export const bahanBakuTable = sqliteTable("BahanBaku", {
     .default(sql`(unixepoch())`),
 });
 
+export const stokHistoriProduksiTable = sqliteTable("StokHistoriProduksi", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  id_produksi: integer("id_produksi"),
+  kode_produksi: text("kode_produksi").notNull(),
+  jumlah_sebelum: integer("jumlah_sebelum").notNull().default(0),
+  jumlah_sesudah: integer("jumlah_sesudah").notNull().default(0),
+  selisih: integer("selisih").notNull().default(0),
+  tipe: text("tipe").notNull(),
+  keterangan: text("keterangan").notNull().default(""),
+  createdAt: integer("createdAt")
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
 export type User = typeof usersTable.$inferSelect;
 export type Jenis = typeof jenisTable.$inferSelect;
 export type Komoditas = typeof komoditasTable.$inferSelect;
@@ -272,3 +286,4 @@ export type PembayaranPenjualan = typeof pembayaranPenjualanTable.$inferSelect;
 export type Barang = typeof barangTable.$inferSelect;
 export type TransaksiBarang = typeof transaksiBarangTable.$inferSelect;
 export type BahanBaku = typeof bahanBakuTable.$inferSelect;
+export type StokHistoriProduksi = typeof stokHistoriProduksiTable.$inferSelect;
