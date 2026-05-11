@@ -26,7 +26,7 @@ export default function JenisKomoditasPage() {
                                 Download Aplikasi Mobile
                             </a>
                             <a
-                                href="https://github.com/itsanla/tefa-26/releases/download/v1.0.1/app-release.apk"
+                                href="https://github.com/itsanla/tefa-26/releases/download/v1.0.1/POS.Printer.Driver.Setup.exe"
                                 className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 shadow-sm transition-colors hover:bg-amber-100"
                                 rel="noopener noreferrer"
                                 target="_blank"
