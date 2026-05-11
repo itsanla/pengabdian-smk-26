@@ -159,7 +159,7 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                             border: Border.all(color: const Color(0xFFDFF5EE)),
                           ),
                           child: Text(
-                            'Stok tersedia: ${provider.selectedProduction!.jumlah} ${provider.selectedProduction!.komoditas?.satuan ?? ''}',
+                            'Stok tersedia: ${provider.selectedProduction!.jumlah} buah',
                             style: Theme.of(context).textTheme.bodyMedium
                                 ?.copyWith(fontWeight: FontWeight.w600),
                           ),
