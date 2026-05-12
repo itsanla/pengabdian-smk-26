@@ -32,7 +32,7 @@ class PenjualanListResponse {
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  static const String baseUrl = 'https://api.smk2batusangkar.tech/api';
+  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
