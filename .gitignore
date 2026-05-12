@@ -79,3 +79,6 @@ source-code/
 .claude/
 skills-lock.json
 .vscode/
+
+.just-trigger
+
