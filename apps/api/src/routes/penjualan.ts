@@ -884,6 +884,260 @@ penjualanApp.get("/:id", async (c) => {
   }
 });
 
+penjualanApp.put("/:id", async (c) => {
+  try {
+    const authUser = c.get("user");
+    if (!authUser || authUser.role !== "admin") {
+      return c.json(
+        { success: false, message: "Hanya admin yang dapat mengubah data penjualan." },
+        403,
+      );
+    }
+
+    const penjualanId = Number(c.req.param("id"));
+    const body = await c.req.json<{
+      keterangan?: string;
+      items?: Array<{
+        keterangan?: string;
+        id_komodity?: number | string;
+        id_produksi?: number | string;
+        jumlah_terjual?: number | string;
+        berat?: number | string;
+      }>;
+    }>();
+
+    const items = body.items;
+    if (!items || items.length === 0)
+      throw new AppError("items harus dikirimkan", 400);
+
+    const v = new Validator();
+    v.check(items.length > 0, "items", "Minimal harus ada satu item penjualan.");
+    items.forEach((item, index) => {
+      v.required(item.id_komodity, `items.${index}.id_komodity`, "ID Komoditas harus diisi.");
+      v.isIntGt(item.id_komodity, 0, `items.${index}.id_komodity`, "ID Komoditas harus berupa angka.");
+      v.required(item.id_produksi, `items.${index}.id_produksi`, "ID Produksi harus diisi.");
+      v.isIntGt(item.id_produksi, 0, `items.${index}.id_produksi`, "ID Produksi harus berupa angka.");
+      v.required(item.jumlah_terjual, `items.${index}.jumlah_terjual`, "Jumlah buah harus diisi.");
+      v.isIntGt(item.jumlah_terjual, 0, `items.${index}.jumlah_terjual`, "Jumlah buah harus berupa angka bulat lebih dari 0.");
+      v.required(item.berat, `items.${index}.berat`, "Berat harus diisi.");
+      v.check(
+        !isNaN(Number(item.berat)) && Number(item.berat) > 0,
+        `items.${index}.berat`,
+        "Berat harus berupa angka lebih dari 0.",
+      );
+    });
+
+    if (v.hasErrors()) {
+      return c.json({ success: false, message: "Validasi gagal", errors: v.getErrors() }, 400);
+    }
+
+    const db = getDb(c.env);
+    const now = Math.floor(Date.now() / 1000);
+
+    const existingPenjualan = await db
+      .select()
+      .from(penjualanTable)
+      .where(eq(penjualanTable.id, penjualanId))
+      .get();
+    if (!existingPenjualan) throw new AppError("Transaksi tidak ditemukan", 404);
+
+    const oldItems = await db
+      .select({
+        id: penjualanItemTabel.id,
+        id_komodity: penjualanItemTabel.id_komodity,
+        id_produksi: penjualanItemTabel.id_produksi,
+        jumlah_terjual: penjualanItemTabel.jumlah_terjual,
+        berat: penjualanItemTabel.berat,
+        harga_satuan: penjualanItemTabel.harga_satuan,
+        sub_total: penjualanItemTabel.sub_total,
+        createdAt: penjualanItemTabel.createdAt,
+      })
+      .from(penjualanItemTabel)
+      .where(eq(penjualanItemTabel.id_penjualan, penjualanId))
+      .all();
+
+    const restoredKomoditasQty = new Map<number, number>();
+    const restoredProduksiQty = new Map<number, number>();
+    for (const old of oldItems) {
+      restoredKomoditasQty.set(old.id_komodity, (restoredKomoditasQty.get(old.id_komodity) ?? 0) + old.jumlah_terjual);
+      restoredProduksiQty.set(old.id_produksi, (restoredProduksiQty.get(old.id_produksi) ?? 0) + old.jumlah_terjual);
+    }
+
+    // Resolve new items — validate against effective stock (current + what old items will restore)
+    const resolvedItems = [] as Array<{
+      id_komodity: number;
+      id_produksi: number;
+      jumlah_terjual: number;
+      berat: number;
+      harga_satuan: number;
+      sub_total: number;
+      keterangan: string;
+    }>;
+
+    for (const item of items) {
+      const id_komodity = Number(item.id_komodity);
+      const id_produksi = Number(item.id_produksi);
+      const jumlah_terjual = Number(item.jumlah_terjual);
+      const berat = Number(item.berat);
+      const keterangan = item.keterangan ?? "";
+
+      const komoditas = await db
+        .select()
+        .from(komoditasTable)
+        .where(eq(komoditasTable.id, id_komodity))
+        .get();
+      if (!komoditas) throw new AppError("Komoditas tidak ditemukan", 404);
+      const effectiveKomoditasJumlah = komoditas.jumlah + (restoredKomoditasQty.get(id_komodity) ?? 0);
+      if (effectiveKomoditasJumlah < jumlah_terjual) {
+        throw new AppError("Stok komoditas tidak mencukupi", 400);
+      }
+
+      const produksi = await db
+        .select()
+        .from(produksiTable)
+        .where(eq(produksiTable.id, id_produksi))
+        .get();
+      if (!produksi) throw new AppError("Produksi tidak ditemukan", 404);
+      const effectiveProduksiJumlah = produksi.jumlah + (restoredProduksiQty.get(id_produksi) ?? 0);
+      if (effectiveProduksiJumlah < jumlah_terjual) {
+        throw new AppError("Stok produksi tidak mencukupi", 400);
+      }
+
+      const harga_satuan = produksi.harga_persatuan;
+      const sub_total = Math.round(harga_satuan * berat);
+
+      resolvedItems.push({ id_komodity, id_produksi, jumlah_terjual, berat, harga_satuan, sub_total, keterangan });
+    }
+
+    // Perform update with rollback tracking
+    const restoredKomoditasLog: Array<{ id: number; qty: number }> = [];
+    const restoredProduksiLog: Array<{ id: number; qty: number }> = [];
+    const newDeductedKomoditas: Array<{ id: number; qty: number }> = [];
+    const newDeductedProduksi: Array<{ id: number; qty: number }> = [];
+    const createdItemIds: number[] = [];
+    let oldItemsDeleted = false;
+
+    try {
+      for (const old of oldItems) {
+        await db
+          .update(komoditasTable)
+          .set({ jumlah: sql`${komoditasTable.jumlah} + ${old.jumlah_terjual}`, updatedAt: now })
+          .where(eq(komoditasTable.id, old.id_komodity));
+        await db
+          .update(produksiTable)
+          .set({ jumlah: sql`${produksiTable.jumlah} + ${old.jumlah_terjual}`, updatedAt: now })
+          .where(eq(produksiTable.id, old.id_produksi));
+        restoredKomoditasLog.push({ id: old.id_komodity, qty: old.jumlah_terjual });
+        restoredProduksiLog.push({ id: old.id_produksi, qty: old.jumlah_terjual });
+      }
+
+      await db
+        .delete(penjualanItemTabel)
+        .where(eq(penjualanItemTabel.id_penjualan, penjualanId));
+      oldItemsDeleted = true;
+
+      for (const item of resolvedItems) {
+        await db
+          .update(komoditasTable)
+          .set({ jumlah: sql`${komoditasTable.jumlah} - ${item.jumlah_terjual}`, updatedAt: now })
+          .where(eq(komoditasTable.id, item.id_komodity));
+        await db
+          .update(produksiTable)
+          .set({ jumlah: sql`${produksiTable.jumlah} - ${item.jumlah_terjual}`, updatedAt: now })
+          .where(eq(produksiTable.id, item.id_produksi));
+        newDeductedKomoditas.push({ id: item.id_komodity, qty: item.jumlah_terjual });
+        newDeductedProduksi.push({ id: item.id_produksi, qty: item.jumlah_terjual });
+
+        const [newItem] = await db
+          .insert(penjualanItemTabel)
+          .values({
+            id_penjualan: penjualanId,
+            id_komodity: item.id_komodity,
+            id_produksi: item.id_produksi,
+            jumlah_terjual: item.jumlah_terjual,
+            berat: item.berat,
+            harga_satuan: item.harga_satuan,
+            sub_total: item.sub_total,
+            createdAt: now,
+            updatedAt: now,
+          })
+          .returning();
+        createdItemIds.push(newItem.id);
+      }
+
+      const total_harga = resolvedItems.reduce((sum, i) => sum + i.sub_total, 0);
+      const keteranganFinal =
+        body.keterangan?.trim() ||
+        resolvedItems
+          .map((i) => i.keterangan.trim())
+          .filter(Boolean)
+          .join(" | ") ||
+        (existingPenjualan as any).keterangan;
+
+      await db
+        .update(penjualanTable)
+        .set({ keterangan: keteranganFinal, total_harga, updatedAt: now })
+        .where(eq(penjualanTable.id, penjualanId));
+    } catch (error) {
+      // Rollback new insertions
+      for (const id of createdItemIds.reverse()) {
+        await db.delete(penjualanItemTabel).where(eq(penjualanItemTabel.id, id));
+      }
+      // Undo new stock deductions
+      for (const k of newDeductedKomoditas) {
+        await db
+          .update(komoditasTable)
+          .set({ jumlah: sql`${komoditasTable.jumlah} + ${k.qty}`, updatedAt: now })
+          .where(eq(komoditasTable.id, k.id));
+      }
+      for (const p of newDeductedProduksi) {
+        await db
+          .update(produksiTable)
+          .set({ jumlah: sql`${produksiTable.jumlah} + ${p.qty}`, updatedAt: now })
+          .where(eq(produksiTable.id, p.id));
+      }
+      // Re-insert old items if they were deleted
+      if (oldItemsDeleted) {
+        for (const old of oldItems) {
+          await db.insert(penjualanItemTabel).values({
+            id_penjualan: penjualanId,
+            id_komodity: old.id_komodity,
+            id_produksi: old.id_produksi,
+            jumlah_terjual: old.jumlah_terjual,
+            berat: old.berat,
+            harga_satuan: old.harga_satuan,
+            sub_total: old.sub_total,
+            createdAt: old.createdAt,
+            updatedAt: now,
+          });
+        }
+      }
+      // Undo stock restoration
+      for (const k of restoredKomoditasLog) {
+        await db
+          .update(komoditasTable)
+          .set({ jumlah: sql`${komoditasTable.jumlah} - ${k.qty}`, updatedAt: now })
+          .where(eq(komoditasTable.id, k.id));
+      }
+      for (const p of restoredProduksiLog) {
+        await db
+          .update(produksiTable)
+          .set({ jumlah: sql`${produksiTable.jumlah} - ${p.qty}`, updatedAt: now })
+          .where(eq(produksiTable.id, p.id));
+      }
+      throw error;
+    }
+
+    return c.json({
+      success: true,
+      message: "Berhasil mengubah data penjualan",
+      data: convertTimestamps({ ...existingPenjualan, id: penjualanId }),
+    });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
 penjualanApp.post("/:id/bayar", async (c) => {
   try {
     const id = Number(c.req.param("id"));

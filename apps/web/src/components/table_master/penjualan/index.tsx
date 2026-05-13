@@ -5,12 +5,18 @@ import { DataTable } from "@/components/table/DataTable";
 import { Penjualan as PenjualanType } from "@/types";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Printer, Download, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Printer, Download, Plus, Pencil } from "lucide-react";
 import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
+import AdminConfirmModal from "./AdminConfirmModal";
 import { printStruk } from "@/components/struk/StrukPembelian";
 import { usePaginatedApi } from "@/hooks/usePaginatedApi";
 import BayarPenjualanModal from "./bayar";
+
+function getRole(): string {
+  if (typeof window === "undefined") return "";
+  return document.cookie.split("; ").find((r) => r.startsWith("role="))?.split("=")[1] ?? "";
+}
 
 export default function Penjualan() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +41,17 @@ export default function Penjualan() {
   const [loadingPenjualanDetailId, setLoadingPenjualanDetailId] = useState<
     number | null
   >(null);
+
+  // Admin edit state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminConfirmOpen, setAdminConfirmOpen] = useState(false);
+  const [pendingEditItem, setPendingEditItem] = useState<PenjualanType | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editInitialData, setEditInitialData] = useState<PenjualanType | null>(null);
+
+  useEffect(() => {
+    setIsAdmin(getRole() === "admin");
+  }, []);
 
   const trimmedSearchTerm = debouncedSearchTerm.trim().toLowerCase();
   const penjualanEndpoint = trimmedSearchTerm
@@ -63,6 +80,25 @@ export default function Penjualan() {
     setDataPenjualan(data);
     setIsExportModalOpen(true);
     console.log("Data untuk ekspor:", data);
+  };
+
+  const handleEditClick = async (item: PenjualanType) => {
+    try {
+      setLoading(true);
+      const detail = await apiRequest({ endpoint: `/penjualan/${item.id}` });
+      setPendingEditItem({ ...item, ...detail });
+      setAdminConfirmOpen(true);
+    } catch {
+      toast.error("Gagal memuat detail penjualan.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdminConfirmed = () => {
+    if (!pendingEditItem) return;
+    setEditInitialData(pendingEditItem);
+    setEditModalOpen(true);
   };
 
   const handlePrintClick = async (id: number) => {
@@ -262,7 +298,29 @@ export default function Penjualan() {
             <Printer size={16} />
           </button>
 
-          {/* modal dirender di level atas, bukan di sini */}
+          {isAdmin && (
+            <button
+              className="tf-action"
+              onClick={() => handleEditClick(item)}
+              type="button"
+              title="Edit penjualan (Admin)"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                border: "1.5px solid #FCA5A5",
+                background: "#FEF2F2",
+                color: "#DC2626",
+                cursor: "pointer",
+                transition: "all .15s",
+              }}
+            >
+              <Pencil size={15} />
+            </button>
+          )}
         </div>
       ),
     },
@@ -332,6 +390,33 @@ export default function Penjualan() {
           penjualan={bayarModalPenjualan}
           onSubmitSuccess={() => {
             setBayarModalPenjualan(null);
+            setPenjualanDetails({});
+            refresh(1);
+          }}
+        />
+      )}
+
+      <AdminConfirmModal
+        isOpen={adminConfirmOpen}
+        onClose={() => {
+          setAdminConfirmOpen(false);
+          setPendingEditItem(null);
+        }}
+        onConfirm={handleAdminConfirmed}
+      />
+
+      {editModalOpen && editInitialData && (
+        <InputPenjualanForm
+          isOpen={editModalOpen}
+          onClose={() => {
+            setEditModalOpen(false);
+            setEditInitialData(null);
+          }}
+          formMode="update"
+          initialData={editInitialData}
+          onSubmitSuccess={() => {
+            setEditModalOpen(false);
+            setEditInitialData(null);
             setPenjualanDetails({});
             refresh(1);
           }}

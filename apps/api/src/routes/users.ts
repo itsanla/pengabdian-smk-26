@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { roleEnum, usersTable } from "../db/schema";
-import { hashPassword } from "../utils/password";
+import { hashPassword, verifyPassword } from "../utils/password";
 import { Validator } from "../utils/validation";
 import { handleAnyError } from "../errors/app_error";
 import type { Env, Variables } from "../types";
@@ -190,6 +190,37 @@ usersApp.put("/:id", async (c) => {
       message: `Berhasil mengupdate user: ${updated.nama}.`,
       data: convertTimestamps(updated),
     });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
+usersApp.post("/verify-password", async (c) => {
+  try {
+    const authUser = c.get("user");
+    const body = await c.req.json<{ password?: string }>();
+
+    if (!body.password) {
+      return c.json({ success: false, message: "Password harus diisi." }, 400);
+    }
+
+    const db = getDb(c.env);
+    const dbUser = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, authUser.id))
+      .get();
+
+    if (!dbUser) {
+      return c.json({ success: false, message: "User tidak ditemukan." }, 404);
+    }
+
+    const isValid = await verifyPassword(body.password, dbUser.password);
+    if (!isValid) {
+      return c.json({ success: false, message: "Password salah." }, 401);
+    }
+
+    return c.json({ success: true, message: "Password valid." });
   } catch (error) {
     return handleAnyError(c, error);
   }
