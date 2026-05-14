@@ -215,10 +215,10 @@ export default function Penjualan() {
     },
     {
       header: "Jumlah Buah",
-      accessorKey: "jumlah_produk" as keyof PenjualanType,
+      accessorKey: "jumlah_buah" as keyof PenjualanType,
       cell: (item: PenjualanType) => (
         <span className="font-medium">
-          {item.jumlah_produk ?? item.items?.length ?? 0} buah
+          {item.jumlah_buah ?? 0} buah
         </span>
       ),
     },

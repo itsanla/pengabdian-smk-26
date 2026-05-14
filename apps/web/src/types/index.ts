@@ -90,6 +90,7 @@ export interface Penjualan {
   createdAt: string;
   updatedAt: string;
   jumlah_produk?: number;
+  jumlah_buah?: number;
   total_berat_kg?: number;
   kode_produksi_list?: string[];
   id_komodity?: number;

@@ -8,7 +8,8 @@
   ],
     "vars": {
     "CLOUDINARY_CLOUD_NAME": "dn8cktife",
-    "FRONTEND_URL":"https://smk2batusangkar.tech"
+    "FRONTEND_URL":"https://smk2batusangkar.tech",
+    "ALLOWED_ORIGINS":"https://smk2batusangkar.tech,https://tefa.smkn2batusangkar.sch.id"
   },
   "d1_databases": [
     {

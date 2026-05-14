@@ -403,9 +403,15 @@ async function loadPenjualanListRows(
       0,
     );
 
+    const jumlah_buah = relatedItems.reduce(
+      (sum, item) => sum + item.jumlah_terjual,
+      0,
+    );
+
     return convertTimestamps({
       ...header,
       jumlah_produk: relatedItems.length,
+      jumlah_buah,
       kode_produksi_list: kodeProduksiList,
       total_berat_kg,
       sisa_bayar: header.total_harga - header.total_terbayar,
@@ -1074,9 +1080,15 @@ penjualanApp.put("/:id", async (c) => {
           .join(" | ") ||
         (existingPenjualan as any).keterangan;
 
+      const currentStatus = (existingPenjualan as any).status ?? "lunas";
+      const updatedFields: Record<string, unknown> = { keterangan: keteranganFinal, total_harga, updatedAt: now };
+      if (currentStatus === "lunas") {
+        updatedFields.total_terbayar = total_harga;
+      }
+
       await db
         .update(penjualanTable)
-        .set({ keterangan: keteranganFinal, total_harga, updatedAt: now })
+        .set(updatedFields)
         .where(eq(penjualanTable.id, penjualanId));
     } catch (error) {
       // Rollback new insertions

@@ -29,9 +29,10 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  title?: string;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title = "Tambahkan Penjualan" }) => {
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -60,7 +61,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children }) => {
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
           <h3 className="text-xl font-bold text-gray-800 dark:text-white">
-            Tambahkan Penjualan
+            {title}
           </h3>
           <button
             onClick={onClose}
@@ -286,7 +287,7 @@ export default function InputPenjualanForm({
         errors[`${index}.berat`] = "Berat harus lebih dari 0";
       }
 
-      if (item.id_produksi && item.jumlah_terjual) {
+      if (formMode === "create" && item.id_produksi && item.jumlah_terjual) {
         const selected = produksiList.find(
           (p) => Number(p.id) === item.id_produksi,
         );
@@ -326,8 +327,7 @@ export default function InputPenjualanForm({
 
     const payload = {
       keterangan: keteranganGlobal,
-      status,
-      ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}),
+      ...(formMode === "create" ? { status, ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}) } : {}),
       items: formItems.map((item) => ({
         id_komodity: item.id_komodity,
         id_produksi: item.id_produksi,
@@ -405,7 +405,7 @@ export default function InputPenjualanForm({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} title={formMode === "update" ? "Edit Penjualan" : "Tambahkan Penjualan"}>
       <div className="p-4">
         <form
           onSubmit={handleSubmit}
