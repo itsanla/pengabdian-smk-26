@@ -224,6 +224,14 @@ class AddSaleProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateItem(int productionId, CartItem updatedItem) {
+    final index = _items.indexWhere((item) => item.produksi.id == productionId);
+    if (index >= 0) {
+      _items[index] = updatedItem;
+      notifyListeners();
+    }
+  }
+
   Future<String> submit(String token) async {
     if (_items.isEmpty) {
       throw ApiException('Tambahkan minimal satu item penjualan');

@@ -8,6 +8,7 @@ import '../services/receipt_printer.dart';
 import '../utils/helpers.dart';
 import '../widgets/currency_input_field.dart';
 import '../widgets/detail_row_widget.dart';
+import 'edit_sale_screen.dart';
 
 class SaleDetailScreen extends StatefulWidget {
   const SaleDetailScreen({
@@ -221,6 +222,83 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
         false;
   }
 
+  Future<void> _handleEdit(PenjualanDetail detail) async {
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Verifikasi Admin'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Masukkan password admin untuk melanjutkan.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(null),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('Verifikasi'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (password == null || password.trim().isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final api = ApiService();
+
+    try {
+      await api.verifyPassword(
+        token: widget.session.token,
+        password: password.trim(),
+      );
+    } on ApiUnauthorizedException {
+      if (!mounted) return;
+      await widget.onSessionExpired();
+      return;
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Verifikasi gagal: $error')),
+      );
+      return;
+    }
+
+    final updated = await navigator.push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            EditSaleScreen(token: widget.session.token, detail: detail),
+      ),
+    );
+
+    if (!mounted) return;
+    if (updated == true) {
+      await _loadDetail();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
@@ -352,25 +430,39 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                     }),
                     const SizedBox(height: 16),
                   ],
-                  FilledButton.icon(
-                    onPressed: widget.provider.printingSaleId == detail.id
-                        ? null
-                        : () => _printDetail(detail),
-                    icon: widget.provider.printingSaleId == detail.id
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.print_rounded),
-                    label: Text(
-                      widget.provider.printingSaleId == detail.id
-                          ? 'Mencetak...'
-                          : 'Print Struk',
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: widget.provider.printingSaleId == detail.id
+                              ? null
+                              : () => _printDetail(detail),
+                          icon: widget.provider.printingSaleId == detail.id
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Icon(Icons.print_rounded),
+                          label: Text(
+                            widget.provider.printingSaleId == detail.id
+                                ? 'Mencetak...'
+                                : 'Print Struk',
+                          ),
+                        ),
+                      ),
+                      if (widget.session.user.role.toLowerCase() ==
+                          'admin') ...[
+                        const SizedBox(width: 10),
+                        FilledButton.tonal(
+                          onPressed: () => _handleEdit(detail),
+                          child: const Text('Edit Penjualan'),
+                        ),
+                      ],
+                    ],
                   ),
                   if (detail.canPay) ...[
                     const SizedBox(height: 20),

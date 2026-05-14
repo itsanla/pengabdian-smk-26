@@ -1,3 +1,5 @@
+// ignore_for_file: use_null_aware_elements
+
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -266,6 +268,55 @@ class ApiService {
     }
 
     return (body['message'] ?? 'Penjualan berhasil disimpan.') as String;
+  }
+
+  Future<bool> verifyPassword({
+    required String token,
+    required String password,
+  }) async {
+    final response = await _client.post(
+      _uri('/users/verify-password'),
+      headers: _jsonHeaders(token: token),
+      body: jsonEncode({'password': password}),
+    );
+
+    final body = _decodeBody(response);
+    final success = body['success'] == true;
+
+    if (response.statusCode == 401) {
+      _throwApiError(body, statusCode: response.statusCode);
+    }
+
+    if (!success || response.statusCode >= 400) {
+      _throwApiError(body, statusCode: response.statusCode);
+    }
+
+    return true;
+  }
+
+  Future<String> updatePenjualan({
+    required String token,
+    required int id,
+    required Map<String, dynamic> payload,
+  }) async {
+    final response = await _client.put(
+      _uri('/penjualan/$id'),
+      headers: _jsonHeaders(token: token),
+      body: jsonEncode(payload),
+    );
+
+    final body = _decodeBody(response);
+    final success = body['success'] == true;
+
+    if (response.statusCode == 401) {
+      _throwUnauthorized();
+    }
+
+    if (!success || response.statusCode >= 400) {
+      _throwApiError(body, statusCode: response.statusCode);
+    }
+
+    return (body['message'] ?? 'Penjualan berhasil diperbarui.') as String;
   }
 
   Future<String> bayarPenjualan({

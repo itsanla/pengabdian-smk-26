@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/cart_item.dart';
 import '../models/produksi.dart';
 import '../providers/add_sale_provider.dart';
 import '../providers/auth_provider.dart';
@@ -86,6 +87,87 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _editItem(AddSaleProvider provider, CartItem item) async {
+    final beratController = TextEditingController(
+      text: provider.formatQuantity(item.berat),
+    );
+    final jumlahController = TextEditingController(
+      text: item.jumlahTerjual.toString(),
+    );
+
+    final updated = await showDialog<CartItem>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${item.produksi.kodeProduksi} — ${item.produksi.komoditas?.nama ?? '-'}',
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: beratController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah berat',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: jumlahController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Jumlah buah',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final berat =
+                    double.tryParse(
+                      beratController.text.replaceAll(',', '.').trim(),
+                    ) ??
+                    0;
+                final jumlah = int.tryParse(jumlahController.text.trim()) ?? 0;
+
+                if (berat <= 0 || jumlah <= 0) {
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Berat dan jumlah buah harus lebih besar dari 0',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(
+                  dialogContext,
+                ).pop(item.copyWith(berat: berat, jumlahTerjual: jumlah));
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (updated == null) return;
+    provider.updateItem(item.produksi.id, updated);
   }
 
   @override
@@ -257,14 +339,28 @@ class _AddSaleScreenState extends State<AddSaleScreen> {
                                   const SizedBox(height: 8),
                                   Align(
                                     alignment: Alignment.centerRight,
-                                    child: TextButton.icon(
-                                      onPressed: provider.isSaving
-                                          ? null
-                                          : () => provider.removeItem(
-                                              item.produksi.id,
-                                            ),
-                                      icon: const Icon(Icons.delete_outline),
-                                      label: const Text('Hapus'),
+                                    child: Wrap(
+                                      spacing: 8,
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: provider.isSaving
+                                              ? null
+                                              : () => _editItem(provider, item),
+                                          icon: const Icon(Icons.edit_outlined),
+                                          label: const Text('Edit'),
+                                        ),
+                                        TextButton.icon(
+                                          onPressed: provider.isSaving
+                                              ? null
+                                              : () => provider.removeItem(
+                                                  item.produksi.id,
+                                                ),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                          ),
+                                          label: const Text('Hapus'),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
