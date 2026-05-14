@@ -55,6 +55,7 @@ export default function AdminConfirmModal({
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      style={{ margin: 0 }}
       onClick={handleClose}
     >
       <div

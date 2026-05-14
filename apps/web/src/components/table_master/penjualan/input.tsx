@@ -56,6 +56,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title =
   return (
     <div
       className="fixed inset-0 z-[9999] bg-[rgba(0,0,0,0.5)] backdrop-blur-sm flex justify-center items-center"
+      style={{ margin: 0 }}
       onClick={handleBackdropClick}
     >
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-xl w-full max-h-[90vh] overflow-y-auto">

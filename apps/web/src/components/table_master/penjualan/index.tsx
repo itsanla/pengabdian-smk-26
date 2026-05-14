@@ -428,7 +428,11 @@ export default function Penjualan() {
         <div
           style={{
             position: "fixed",
-            inset: 0,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            left: 0,
+            margin: 0,
             zIndex: 1000,
             display: "flex",
             alignItems: "center",
@@ -445,208 +449,165 @@ export default function Penjualan() {
               background: "#fff",
               borderRadius: 20,
               width: "100%",
-              maxWidth: 480,
+              maxWidth: 520,
               boxShadow: "0 32px 80px rgba(0,0,0,.2)",
               animation: "dt-slideUp .25s cubic-bezier(.34,1.56,.64,1)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div
-              style={{
-                padding: "18px 20px 14px",
-                borderBottom: "1px solid #F3F4F6",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <div>
-                <p
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: "#111827",
-                    margin: 0,
-                  }}
-                >
-                  Item Penjualan
-                </p>
-                <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2 }}>
-                  {penjualanDetails[expandedPenjualanId]?.items?.length ?? 0}{" "}
-                  produk
-                </p>
-                {penjualanDetails[expandedPenjualanId]?.keterangan && (
-                  <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4 }}>
-                    <span style={{ fontWeight: 600 }}>Keterangan:</span>{" "}
-                    {penjualanDetails[expandedPenjualanId]!.keterangan}
-                  </p>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setExpandedPenjualanId(null)}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: "#F3F4F6",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  color: "#6B7280",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                ✕
-              </button>
-            </div>
+            {(() => {
+              const detail = penjualanDetails[expandedPenjualanId];
+              const statusColors: Record<string, { bg: string; color: string; label: string }> = {
+                lunas:    { bg: "#D1FAE5", color: "#065F46", label: "Lunas" },
+                angsuran: { bg: "#FEF3C7", color: "#92400E", label: "Angsuran" },
+                hutang:   { bg: "#FEE2E2", color: "#991B1B", label: "Hutang" },
+              };
+              const st = statusColors[detail?.status ?? "lunas"] ?? statusColors.lunas;
+              return (
+                <>
+                  <div style={{ padding: "18px 20px 14px", borderBottom: "1px solid #F3F4F6", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: "#111827", margin: 0 }}>
+                          Detail Penjualan #{detail?.id ?? expandedPenjualanId}
+                        </p>
+                        {detail?.status && (
+                          <span style={{ background: st.bg, color: st.color, borderRadius: 20, padding: "2px 10px", fontSize: 11, fontWeight: 700 }}>
+                            {st.label}
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 3, margin: "3px 0 0" }}>
+                        {detail?.createdAt
+                          ? new Date(detail.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
+                          : "-"}
+                      </p>
+                      {detail?.keterangan && (
+                        <p style={{ fontSize: 12, color: "#6B7280", marginTop: 4, margin: "4px 0 0" }}>
+                          <span style={{ fontWeight: 600 }}>Keterangan:</span> {detail.keterangan}
+                        </p>
+                      )}
+                    </div>
+                    <button type="button" onClick={() => setExpandedPenjualanId(null)}
+                      style={{ width: 28, height: 28, borderRadius: "50%", border: "none", background: "#F3F4F6", cursor: "pointer", fontSize: 13, color: "#6B7280", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Ringkasan pembayaran */}
+                  {detail && (
+                    <div style={{ padding: "12px 20px", borderBottom: "1px solid #F3F4F6", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                      <div style={{ background: "#F9FAFB", borderRadius: 10, padding: "10px 12px" }}>
+                        <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Total Harga</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "#111827", margin: "3px 0 0" }}>
+                          Rp {new Intl.NumberFormat("id-ID").format(detail.total_harga)}
+                        </p>
+                      </div>
+                      <div style={{ background: "#F0FDF4", borderRadius: 10, padding: "10px 12px" }}>
+                        <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Terbayar</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: "#16A34A", margin: "3px 0 0" }}>
+                          Rp {new Intl.NumberFormat("id-ID").format(detail.total_terbayar ?? 0)}
+                        </p>
+                      </div>
+                      <div style={{ background: (detail.sisa_bayar ?? 0) > 0 ? "#FFF7ED" : "#F9FAFB", borderRadius: 10, padding: "10px 12px" }}>
+                        <p style={{ fontSize: 11, color: "#9CA3AF", margin: 0 }}>Sisa Bayar</p>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: (detail.sisa_bayar ?? 0) > 0 ? "#EA580C" : "#111827", margin: "3px 0 0" }}>
+                          Rp {new Intl.NumberFormat("id-ID").format(detail.sisa_bayar ?? 0)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Body */}
             {loadingPenjualanDetailId === expandedPenjualanId ? (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 8,
-                  padding: "48px 20px",
-                  color: "#9CA3AF",
-                  fontSize: 14,
-                }}
-              >
-                <div
-                  style={{
-                    width: 16,
-                    height: 16,
-                    border: "2px solid #2563EB",
-                    borderTopColor: "transparent",
-                    borderRadius: "50%",
-                    animation: "dt-spin .8s linear infinite",
-                  }}
-                />
-                Memuat item penjualan...
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "48px 20px", color: "#9CA3AF", fontSize: 14 }}>
+                <div style={{ width: 16, height: 16, border: "2px solid #2563EB", borderTopColor: "transparent", borderRadius: "50%", animation: "dt-spin .8s linear infinite" }} />
+                Memuat detail penjualan...
               </div>
             ) : (
-              <div
-                style={{
-                  padding: "14px 20px 20px",
-                  maxHeight: "60vh",
-                  overflowY: "auto",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                {(penjualanDetails[expandedPenjualanId]?.items ?? []).length >
-                0 ? (
-                  penjualanDetails[expandedPenjualanId]!.items!.map(
-                    (detailItem) => (
-                      <div
-                        key={detailItem.id}
-                        style={{
-                          border: "1px solid #F3F4F6",
-                          borderRadius: 12,
-                          padding: "12px 14px",
-                          background: "#FAFAFA",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            justifyContent: "space-between",
-                            gap: 12,
-                          }}
-                        >
-                          <div style={{ minWidth: 0 }}>
-                            <p
-                              style={{
-                                fontWeight: 600,
-                                fontSize: 14,
-                                color: "#111827",
-                                margin: 0,
-                              }}
-                            >
-                              {detailItem.komoditas?.nama ?? "-"}
-                            </p>
-                            <p
-                              style={{
-                                fontSize: 12,
-                                color: "#9CA3AF",
-                                marginTop: 2,
-                              }}
-                            >
-                              {detailItem.produksi?.kode_produksi ?? "-"} ·{" "}
-                              {detailItem.produksi?.ukuran ?? "-"} ·{" "}
-                              {detailItem.produksi?.kualitas ?? "-"}
-                            </p>
+              <div style={{ maxHeight: "55vh", overflowY: "auto" }}>
+                {/* Item list */}
+                <div style={{ padding: "14px 20px 4px" }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Item ({penjualanDetails[expandedPenjualanId]?.items?.length ?? 0} produk)
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {(penjualanDetails[expandedPenjualanId]?.items ?? []).length > 0 ? (
+                      penjualanDetails[expandedPenjualanId]!.items!.map((detailItem) => (
+                        <div key={detailItem.id} style={{ border: "1px solid #F3F4F6", borderRadius: 12, padding: "12px 14px", background: "#FAFAFA" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                            <div style={{ minWidth: 0 }}>
+                              <p style={{ fontWeight: 600, fontSize: 14, color: "#111827", margin: 0 }}>
+                                {detailItem.komoditas?.nama ?? "-"}
+                              </p>
+                              <p style={{ fontSize: 12, color: "#9CA3AF", margin: "2px 0 0" }}>
+                                {detailItem.produksi?.kode_produksi ?? "-"} · {detailItem.produksi?.ukuran ?? "-"} · {detailItem.produksi?.kualitas ?? "-"}
+                              </p>
+                              {(detailItem.produksi as any)?.asal_produksi?.nama && (
+                                <p style={{ fontSize: 11, color: "#6B7280", margin: "2px 0 0" }}>
+                                  Asal: {(detailItem.produksi as any).asal_produksi.nama}
+                                </p>
+                              )}
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+                              <span style={{ background: "#EFF6FF", color: "#2563EB", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
+                                {detailItem.jumlah_terjual} buah
+                              </span>
+                              <span style={{ background: "#F0FDF4", color: "#16A34A", borderRadius: 20, padding: "3px 10px", fontSize: 12, fontWeight: 600 }}>
+                                {detailItem.berat ?? 0} kg
+                              </span>
+                            </div>
                           </div>
-                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
-                            <span
-                              style={{
-                                background: "#EFF6FF",
-                                color: "#2563EB",
-                                borderRadius: 20,
-                                padding: "3px 10px",
-                                fontSize: 12,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {detailItem.jumlah_terjual} buah
-                            </span>
-                            <span
-                              style={{
-                                background: "#F0FDF4",
-                                color: "#16A34A",
-                                borderRadius: 20,
-                                padding: "3px 10px",
-                                fontSize: 12,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {detailItem.berat ?? 0} kg
+                          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "#6B7280" }}>
+                            <span>Rp {new Intl.NumberFormat("id-ID").format(detailItem.harga_satuan)}/kg</span>
+                            <span style={{ fontWeight: 600, color: "#111827" }}>
+                              Subtotal Rp {new Intl.NumberFormat("id-ID").format(detailItem.sub_total)}
                             </span>
                           </div>
                         </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginTop: 8,
-                            fontSize: 12,
-                            color: "#6B7280",
-                          }}
-                        >
-                          <span>
-                            Rp {new Intl.NumberFormat("id-ID").format(
-                              detailItem.harga_satuan,
-                            )}/kg
-                          </span>
-                          <span style={{ fontWeight: 600, color: "#111827" }}>
-                            Subtotal Rp {new Intl.NumberFormat("id-ID").format(
-                              detailItem.sub_total,
-                            )}
-                          </span>
-                        </div>
+                      ))
+                    ) : (
+                      <div style={{ border: "1.5px dashed #E5E7EB", borderRadius: 12, padding: "32px 16px", textAlign: "center", fontSize: 14, color: "#9CA3AF" }}>
+                        Tidak ada detail item.
                       </div>
-                    ),
-                  )
-                ) : (
-                  <div
-                    style={{
-                      border: "1.5px dashed #E5E7EB",
-                      borderRadius: 12,
-                      padding: "32px 16px",
-                      textAlign: "center",
-                      fontSize: 14,
-                      color: "#9CA3AF",
-                    }}
-                  >
-                    Tidak ada detail item.
+                    )}
                   </div>
+                </div>
+
+                {/* Riwayat pembayaran */}
+                {(penjualanDetails[expandedPenjualanId]?.pembayaran ?? []).length > 0 && (
+                  <div style={{ padding: "14px 20px 20px" }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: "#6B7280", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Riwayat Pembayaran
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {penjualanDetails[expandedPenjualanId]!.pembayaran!.map((p, i) => (
+                        <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#F9FAFB", borderRadius: 10, padding: "8px 12px" }}>
+                          <div>
+                            <p style={{ fontSize: 12, fontWeight: 600, color: "#111827", margin: 0 }}>
+                              Pembayaran ke-{i + 1}
+                              {p.keterangan ? ` · ${p.keterangan}` : ""}
+                            </p>
+                            <p style={{ fontSize: 11, color: "#9CA3AF", margin: "2px 0 0" }}>
+                              {p.createdAt ? new Date(p.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                            </p>
+                          </div>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#16A34A" }}>
+                            Rp {new Intl.NumberFormat("id-ID").format(p.jumlah_bayar)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Padding bawah jika tidak ada riwayat pembayaran */}
+                {(penjualanDetails[expandedPenjualanId]?.pembayaran ?? []).length === 0 && (
+                  <div style={{ height: 16 }} />
                 )}
               </div>
             )}
