@@ -1150,6 +1150,63 @@ penjualanApp.put("/:id", async (c) => {
   }
 });
 
+penjualanApp.delete("/:id", async (c) => {
+  try {
+    const authUser = c.get("user");
+    if (!authUser || authUser.role !== "admin") {
+      return c.json(
+        { success: false, message: "Hanya admin yang dapat menghapus data penjualan." },
+        403,
+      );
+    }
+
+    const penjualanId = Number(c.req.param("id"));
+    const db = getDb(c.env);
+    const now = Math.floor(Date.now() / 1000);
+
+    const existingPenjualan = await db
+      .select()
+      .from(penjualanTable)
+      .where(eq(penjualanTable.id, penjualanId))
+      .get();
+    if (!existingPenjualan) throw new AppError("Transaksi tidak ditemukan", 404);
+
+    const oldItems = await db
+      .select()
+      .from(penjualanItemTabel)
+      .where(eq(penjualanItemTabel.id_penjualan, penjualanId))
+      .all();
+
+    for (const item of oldItems) {
+      await db
+        .update(komoditasTable)
+        .set({ jumlah: sql`${komoditasTable.jumlah} + ${item.jumlah_terjual}`, updatedAt: now })
+        .where(eq(komoditasTable.id, item.id_komodity));
+      await db
+        .update(produksiTable)
+        .set({ jumlah: sql`${produksiTable.jumlah} + ${item.jumlah_terjual}`, updatedAt: now })
+        .where(eq(produksiTable.id, item.id_produksi));
+    }
+
+    await db
+      .delete(pembayaranPenjualanTable)
+      .where(eq(pembayaranPenjualanTable.id_penjualan, penjualanId));
+    await db
+      .delete(penjualanItemTabel)
+      .where(eq(penjualanItemTabel.id_penjualan, penjualanId));
+    await db
+      .delete(penjualanTable)
+      .where(eq(penjualanTable.id, penjualanId));
+
+    return c.json({
+      success: true,
+      message: "Berhasil menghapus data penjualan dan stok produksi telah dikembalikan",
+    });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
 penjualanApp.post("/:id/bayar", async (c) => {
   try {
     const id = Number(c.req.param("id"));

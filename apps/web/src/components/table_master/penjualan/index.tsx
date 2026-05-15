@@ -5,7 +5,7 @@ import { DataTable } from "@/components/table/DataTable";
 import { Penjualan as PenjualanType } from "@/types";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import { ChevronDown, ChevronUp, Printer, Download, Plus, Pencil } from "lucide-react";
+import { ChevronDown, ChevronUp, Printer, Download, Plus, Pencil, Trash2 } from "lucide-react";
 import InputPenjualanForm from "./input";
 import ExportPenjualanModal from "./export";
 import AdminConfirmModal from "./AdminConfirmModal";
@@ -48,6 +48,10 @@ export default function Penjualan() {
   const [pendingEditItem, setPendingEditItem] = useState<PenjualanType | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editInitialData, setEditInitialData] = useState<PenjualanType | null>(null);
+
+  // Admin delete state
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteItem, setPendingDeleteItem] = useState<PenjualanType | null>(null);
 
   useEffect(() => {
     setIsAdmin(getRole() === "admin");
@@ -99,6 +103,30 @@ export default function Penjualan() {
     if (!pendingEditItem) return;
     setEditInitialData(pendingEditItem);
     setEditModalOpen(true);
+  };
+
+  const handleDeleteClick = (item: PenjualanType) => {
+    setPendingDeleteItem(item);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!pendingDeleteItem) return;
+    try {
+      setLoading(true);
+      await apiRequest({
+        endpoint: `/penjualan/${pendingDeleteItem.id}`,
+        method: "DELETE",
+      });
+      toast.success("Penjualan berhasil dihapus dan stok produksi telah dikembalikan.");
+      setPenjualanDetails({});
+      refresh(1);
+    } catch {
+      toast.error("Gagal menghapus penjualan.");
+    } finally {
+      setLoading(false);
+      setPendingDeleteItem(null);
+    }
   };
 
   const handlePrintClick = async (id: number) => {
@@ -299,27 +327,50 @@ export default function Penjualan() {
           </button>
 
           {isAdmin && (
-            <button
-              className="tf-action"
-              onClick={() => handleEditClick(item)}
-              type="button"
-              title="Edit penjualan (Admin)"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 32,
-                height: 32,
-                borderRadius: 8,
-                border: "1.5px solid #FCA5A5",
-                background: "#FEF2F2",
-                color: "#DC2626",
-                cursor: "pointer",
-                transition: "all .15s",
-              }}
-            >
-              <Pencil size={15} />
-            </button>
+            <>
+              <button
+                className="tf-action"
+                onClick={() => handleEditClick(item)}
+                type="button"
+                title="Edit penjualan (Admin)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1.5px solid #FCA5A5",
+                  background: "#FEF2F2",
+                  color: "#DC2626",
+                  cursor: "pointer",
+                  transition: "all .15s",
+                }}
+              >
+                <Pencil size={15} />
+              </button>
+              <button
+                className="tf-action"
+                onClick={() => handleDeleteClick(item)}
+                type="button"
+                title="Hapus penjualan (Admin)"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 8,
+                  border: "1.5px solid #FECACA",
+                  background: "#DC2626",
+                  color: "#fff",
+                  cursor: "pointer",
+                  transition: "all .15s",
+                }}
+              >
+                <Trash2 size={15} />
+              </button>
+            </>
           )}
         </div>
       ),
@@ -403,6 +454,16 @@ export default function Penjualan() {
           setPendingEditItem(null);
         }}
         onConfirm={handleAdminConfirmed}
+      />
+
+      <AdminConfirmModal
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setPendingDeleteItem(null);
+        }}
+        onConfirm={handleDeleteConfirmed}
+        mode="delete"
       />
 
       {editModalOpen && editInitialData && (

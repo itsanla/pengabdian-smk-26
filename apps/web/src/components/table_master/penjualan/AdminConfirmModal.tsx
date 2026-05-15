@@ -8,12 +8,14 @@ interface AdminConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  mode?: "edit" | "delete";
 }
 
 export default function AdminConfirmModal({
   isOpen,
   onClose,
   onConfirm,
+  mode = "edit",
 }: AdminConfirmModalProps) {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -64,30 +66,45 @@ export default function AdminConfirmModal({
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
-          <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+          <div className={`flex items-center justify-center w-10 h-10 rounded-full ${mode === "delete" ? "bg-red-100" : "bg-red-100"}`}>
             <ShieldAlert size={20} className="text-red-600" />
           </div>
           <div>
             <h2 className="text-base font-bold text-gray-900">
-              Konfirmasi Akses Admin
+              {mode === "delete" ? "Konfirmasi Hapus Penjualan" : "Konfirmasi Akses Admin"}
             </h2>
             <p className="text-xs text-gray-500">Verifikasi identitas sebelum melanjutkan</p>
           </div>
         </div>
 
         {/* Warning Banner */}
-        <div className="mx-6 mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
-          <div className="text-sm text-amber-800 leading-snug">
-            <p className="font-semibold mb-1">Data Penjualan Bersifat Sensitif</p>
-            <p>
-              Pastikan perubahan yang akan dilakukan telah disetujui oleh{" "}
-              <span className="font-semibold">kepala sekolah</span> atau{" "}
-              <span className="font-semibold">pihak yang berwenang</span>.
-              Setiap perubahan akan mempengaruhi laporan keuangan dan stok produksi.
-            </p>
+        {mode === "delete" ? (
+          <div className="mx-6 mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+            <AlertTriangle size={18} className="text-red-600 mt-0.5 shrink-0" />
+            <div className="text-sm text-red-800 leading-snug">
+              <p className="font-semibold mb-1">Tindakan Ini Tidak Dapat Dibatalkan</p>
+              <p>
+                Data penjualan akan <span className="font-semibold">dihapus permanen</span> dari sistem.
+                Stok produksi akan dikembalikan secara otomatis.
+                Pastikan penghapusan telah disetujui oleh{" "}
+                <span className="font-semibold">pihak yang berwenang</span>.
+              </p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mx-6 mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <AlertTriangle size={18} className="text-amber-600 mt-0.5 shrink-0" />
+            <div className="text-sm text-amber-800 leading-snug">
+              <p className="font-semibold mb-1">Data Penjualan Bersifat Sensitif</p>
+              <p>
+                Pastikan perubahan yang akan dilakukan telah disetujui oleh{" "}
+                <span className="font-semibold">kepala sekolah</span> atau{" "}
+                <span className="font-semibold">pihak yang berwenang</span>.
+                Setiap perubahan akan mempengaruhi laporan keuangan dan stok produksi.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleVerify} className="px-6 pt-5 pb-6 space-y-4">
@@ -135,7 +152,7 @@ export default function AdminConfirmModal({
               disabled={loading}
               className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60 transition-colors"
             >
-              {loading ? "Memverifikasi..." : "Verifikasi & Lanjutkan"}
+              {loading ? "Memverifikasi..." : mode === "delete" ? "Verifikasi & Hapus" : "Verifikasi & Lanjutkan"}
             </button>
           </div>
         </form>
