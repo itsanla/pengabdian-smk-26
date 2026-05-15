@@ -34,8 +34,7 @@ class PenjualanListResponse {
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  // static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
-  static const String baseUrl = 'http://192.168.1.28:8787/api';
+  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
