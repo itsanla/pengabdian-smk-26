@@ -4,6 +4,7 @@ import '../models/cart_item.dart';
 import '../models/produksi.dart';
 import '../models/penjualan.dart';
 import '../services/api_service.dart';
+import '../widgets/currency_input_field.dart';
 import '../utils/helpers.dart';
 
 class EditSaleScreen extends StatefulWidget {
@@ -26,6 +27,8 @@ class _EditSaleScreenState extends State<EditSaleScreen> {
   String _beratText = '1';
   String _jumlahTerjualText = '1';
   String _note = '';
+  String _selectedStatus = 'lunas';
+  String _firstInstallmentText = '';
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -34,6 +37,10 @@ class _EditSaleScreenState extends State<EditSaleScreen> {
   void initState() {
     super.initState();
     _note = widget.detail.keterangan;
+    _selectedStatus = widget.detail.status.isEmpty
+        ? 'lunas'
+        : widget.detail.status;
+    _firstInstallmentText = '';
     Future.microtask(_loadProductionsAndSeedItems);
   }
 
@@ -279,7 +286,47 @@ class _EditSaleScreenState extends State<EditSaleScreen> {
           )
           .toList(growable: false);
 
-      final payload = {'keterangan': _composedNote, 'items': itemsPayload};
+      if (_selectedStatus == 'angsuran') {
+        final uang = int.tryParse(
+          _firstInstallmentText.replaceAll(RegExp(r'[^0-9]'), ''),
+        );
+        if (uang == null || uang <= 0) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Masukkan nominal uang muka yang valid untuk angsuran',
+              ),
+            ),
+          );
+          return;
+        }
+        final payload = {
+          'keterangan': _composedNote,
+          'items': itemsPayload,
+          'status': _selectedStatus,
+          'uang_muka': uang,
+        };
+
+        final message = await _api.updatePenjualan(
+          token: widget.token,
+          id: widget.detail.id,
+          payload: payload,
+        );
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        Navigator.of(context).pop(true);
+        return;
+      }
+
+      final payload = {
+        'keterangan': _composedNote,
+        'items': itemsPayload,
+        'status': _selectedStatus,
+      };
 
       final message = await _api.updatePenjualan(
         token: widget.token,
@@ -510,6 +557,53 @@ class _EditSaleScreenState extends State<EditSaleScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Status Pembayaran',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(
+                      value: 'lunas',
+                      child: Text('Lunas — Bayar penuh di tempat'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'hutang',
+                      child: Text('Hutang — Tidak ada pembayaran awal'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'angsuran',
+                      child: Text('Angsuran — Bayar sebagian (DP)'),
+                    ),
+                  ],
+                  onChanged: _isSaving
+                      ? null
+                      : (v) {
+                          if (v == null) return;
+                          setState(() {
+                            _selectedStatus = v;
+                          });
+                        },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Mengubah status akan mereset riwayat pembayaran sebelumnya.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (_selectedStatus == 'angsuran') ...[
+                  const SizedBox(height: 8),
+                  CurrencyInputField(
+                    labelText: 'Uang muka',
+                    initialValue: _firstInstallmentText,
+                    prefixText: 'Rp ',
+                    onChanged: (v) => _firstInstallmentText = v,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 TextFormField(
                   initialValue: _note,

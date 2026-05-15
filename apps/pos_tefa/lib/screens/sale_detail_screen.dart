@@ -32,7 +32,6 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
   final TextEditingController _jumlahBayarController = TextEditingController();
   final TextEditingController _keteranganBayarController =
       TextEditingController();
-
   PenjualanDetail? _detail;
   bool _isLoading = true;
   bool _isPaying = false;
@@ -299,6 +298,125 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
     }
   }
 
+  Future<bool?> _confirmDeleteSale() {
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Hapus Penjualan'),
+          content: const Text(
+            'Penjualan yang dihapus tidak dapat dipulihkan. Lanjutkan?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _handleDelete(PenjualanDetail detail) async {
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Verifikasi Admin'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Masukkan password admin untuk menghapus penjualan.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(null),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('Verifikasi'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (!mounted) return;
+    if (password == null || password.trim().isEmpty) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final api = ApiService();
+
+    try {
+      await api.verifyPassword(
+        token: widget.session.token,
+        password: password.trim(),
+      );
+    } on ApiUnauthorizedException {
+      if (!mounted) return;
+      await widget.onSessionExpired();
+      return;
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+      return;
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Verifikasi gagal: $error')),
+      );
+      return;
+    }
+
+    final confirmed = await _confirmDeleteSale();
+
+    if (!mounted || confirmed != true) return;
+
+    try {
+      final message = await api.deletePenjualan(
+        token: widget.session.token,
+        id: detail.id,
+      );
+
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(message)));
+      navigator.pop(true);
+    } on ApiUnauthorizedException {
+      if (!mounted) return;
+      await widget.onSessionExpired();
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Gagal menghapus penjualan: $error')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
@@ -430,20 +548,22 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                     }),
                     const SizedBox(height: 16),
                   ],
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: FilledButton.icon(
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
                           onPressed: widget.provider.printingSaleId == detail.id
                               ? null
                               : () => _printDetail(detail),
                           icon: widget.provider.printingSaleId == detail.id
                               ? const SizedBox(
-                                  height: 18,
-                                  width: 18,
+                                  height: 16,
+                                  width: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: Colors.white,
+                                    color: Color(0xFF1F2937),
                                   ),
                                 )
                               : const Icon(Icons.print_rounded),
@@ -452,14 +572,65 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                                 ? 'Mencetak...'
                                 : 'Print Struk',
                           ),
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size.fromHeight(52),
+                            foregroundColor: const Color(0xFF1F2937),
+                            side: const BorderSide(color: Color(0xFFD1D5DB)),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
                         ),
                       ),
                       if (widget.session.user.role.toLowerCase() ==
                           'admin') ...[
-                        const SizedBox(width: 10),
-                        FilledButton.tonal(
-                          onPressed: () => _handleEdit(detail),
-                          child: const Text('Edit Penjualan'),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => _handleEdit(detail),
+                                icon: const Icon(Icons.edit_rounded),
+                                label: const Text('Edit Penjualan'),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(52),
+                                  backgroundColor: const Color(0xFFF3F4F6),
+                                  foregroundColor: const Color(0xFF111827),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: () => _handleDelete(detail),
+                                icon: const Icon(Icons.delete_outline_rounded),
+                                label: const Text('Hapus'),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(52),
+                                  backgroundColor: const Color(0xFFFEE2E2),
+                                  foregroundColor: const Color(0xFF991B1B),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
@@ -476,6 +647,7 @@ class _SaleDetailScreenState extends State<SaleDetailScreen> {
                     CurrencyInputField(
                       controller: _jumlahBayarController,
                       labelText: 'Jumlah Bayar',
+                      prefixText: 'Rp ',
                     ),
                     const SizedBox(height: 10),
                     TextFormField(

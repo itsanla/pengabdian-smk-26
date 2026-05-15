@@ -34,7 +34,8 @@ class PenjualanListResponse {
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
+  // static const String baseUrl = 'https://api.workspace-anla.workers.dev/api';
+  static const String baseUrl = 'http://192.168.1.28:8787/api';
   final http.Client _client;
 
   Uri _uri(String path, [Map<String, Object?>? queryParameters]) {
@@ -317,6 +318,29 @@ class ApiService {
     }
 
     return (body['message'] ?? 'Penjualan berhasil diperbarui.') as String;
+  }
+
+  Future<String> deletePenjualan({
+    required String token,
+    required int id,
+  }) async {
+    final response = await _client.delete(
+      _uri('/penjualan/$id'),
+      headers: _jsonHeaders(token: token),
+    );
+
+    final body = _decodeBody(response);
+    final success = body['success'] == true;
+
+    if (response.statusCode == 401) {
+      _throwUnauthorized();
+    }
+
+    if (!success || response.statusCode >= 400) {
+      _throwApiError(body, statusCode: response.statusCode);
+    }
+
+    return (body['message'] ?? 'Penjualan berhasil dihapus.') as String;
   }
 
   Future<String> bayarPenjualan({
