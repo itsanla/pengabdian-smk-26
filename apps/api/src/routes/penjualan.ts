@@ -903,6 +903,8 @@ penjualanApp.put("/:id", async (c) => {
     const penjualanId = Number(c.req.param("id"));
     const body = await c.req.json<{
       keterangan?: string;
+      status?: string;
+      uang_muka?: number | string;
       items?: Array<{
         keterangan?: string;
         id_komodity?: number | string;
@@ -911,6 +913,14 @@ penjualanApp.put("/:id", async (c) => {
         berat?: number | string;
       }>;
     }>();
+
+    if (body.status && !["lunas", "angsuran", "hutang"].includes(body.status)) {
+      throw new AppError("Status tidak valid. Gunakan: lunas, angsuran, atau hutang", 400);
+    }
+    if (body.status === "angsuran") {
+      const dp = Number(body.uang_muka ?? 0);
+      if (!dp || dp <= 0) throw new AppError("Uang muka harus lebih dari 0 untuk status angsuran", 400);
+    }
 
     const items = body.items;
     if (!items || items.length === 0)
@@ -1081,15 +1091,54 @@ penjualanApp.put("/:id", async (c) => {
         (existingPenjualan as any).keterangan;
 
       const currentStatus = (existingPenjualan as any).status ?? "lunas";
-      const updatedFields: Record<string, unknown> = { keterangan: keteranganFinal, total_harga, updatedAt: now };
-      if (currentStatus === "lunas") {
-        updatedFields.total_terbayar = total_harga;
+      const newStatus = body.status && ["lunas", "angsuran", "hutang"].includes(body.status)
+        ? body.status
+        : currentStatus;
+      const statusChanged = newStatus !== currentStatus;
+
+      let new_total_terbayar: number;
+      if (newStatus === "lunas") {
+        new_total_terbayar = total_harga;
+      } else if (newStatus === "angsuran" && statusChanged) {
+        const dp = Number(body.uang_muka ?? 0);
+        if (dp >= total_harga) throw new AppError("Uang muka harus kurang dari total harga", 400);
+        new_total_terbayar = dp;
+      } else if (newStatus === "angsuran") {
+        // status tetap angsuran, harga item berubah — pertahankan total_terbayar lama
+        new_total_terbayar = (existingPenjualan as any).total_terbayar ?? 0;
+      } else {
+        new_total_terbayar = 0;
       }
+
+      const updatedFields: Record<string, unknown> = {
+        keterangan: keteranganFinal,
+        total_harga,
+        status: newStatus,
+        total_terbayar: new_total_terbayar,
+        updatedAt: now,
+      };
 
       await db
         .update(penjualanTable)
         .set(updatedFields)
         .where(eq(penjualanTable.id, penjualanId));
+
+      if (statusChanged) {
+        await db
+          .delete(pembayaranPenjualanTable)
+          .where(eq(pembayaranPenjualanTable.id_penjualan, penjualanId));
+        if (new_total_terbayar > 0) {
+          await db.insert(pembayaranPenjualanTable).values({
+            id_penjualan: penjualanId,
+            jumlah_bayar: new_total_terbayar,
+            keterangan: newStatus === "lunas"
+              ? "Pembayaran lunas (diperbarui admin)"
+              : "Uang muka (diperbarui admin)",
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
     } catch (error) {
       // Rollback new insertions
       for (const id of createdItemIds.reverse()) {

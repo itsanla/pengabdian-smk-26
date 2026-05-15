@@ -100,6 +100,7 @@ export default function InputPenjualanForm({
   const [loading, setLoading] = useState(false);
   const [cetakStruk, setCetakStruk] = useState(true);
   const [status, setStatus] = useState<StatusPembayaran>("lunas");
+  const [initialStatus, setInitialStatus] = useState<StatusPembayaran>("lunas");
   const [uangMuka, setUangMuka] = useState("");
 
   const [komodityList, setKomodityList] = useState<any[]>([]);
@@ -127,8 +128,12 @@ export default function InputPenjualanForm({
           }))
           : [createEmptyItem()];
 
+      const s = (initialData.status as StatusPembayaran) ?? "lunas";
       setFormItems(updateItems);
       setKeteranganGlobal(initialData.keterangan ?? "");
+      setStatus(s);
+      setInitialStatus(s);
+      setUangMuka("");
     } else {
       setFormItems([createEmptyItem()]);
       setKeteranganGlobal("");
@@ -311,7 +316,8 @@ export default function InputPenjualanForm({
       return;
     }
 
-    if (status === "angsuran") {
+    const statusChangedToAngsuran = status === "angsuran" && (formMode === "create" || status !== initialStatus);
+    if (statusChangedToAngsuran) {
       const dp = Number(uangMuka);
       const total = formItems.reduce((sum, item) => sum + item.total_harga, 0);
       if (!dp || dp <= 0) {
@@ -328,7 +334,8 @@ export default function InputPenjualanForm({
 
     const payload = {
       keterangan: keteranganGlobal,
-      ...(formMode === "create" ? { status, ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}) } : {}),
+      status,
+      ...(status === "angsuran" && uangMuka ? { uang_muka: Number(uangMuka) } : {}),
       items: formItems.map((item) => ({
         id_komodity: item.id_komodity,
         id_produksi: item.id_produksi,
@@ -573,36 +580,37 @@ export default function InputPenjualanForm({
             />
           </div>
 
-          {formMode === "create" && (
-            <>
-              <div>
-                <label className="mb-1 block text-sm">Status Pembayaran</label>
-                <select
-                  value={status}
-                  onChange={(e) => { setStatus(e.target.value as StatusPembayaran); setUangMuka(""); }}
-                  className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="lunas">Lunas — Bayar penuh di tempat</option>
-                  <option value="angsuran">Angsuran — Bayar sebagian (DP)</option>
-                  <option value="hutang">Hutang — Tidak ada pembayaran awal</option>
-                </select>
-              </div>
+          <div>
+            <label className="mb-1 block text-sm">Status Pembayaran</label>
+            <select
+              value={status}
+              onChange={(e) => { setStatus(e.target.value as StatusPembayaran); setUangMuka(""); }}
+              className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option value="lunas">Lunas — Bayar penuh di tempat</option>
+              <option value="angsuran">Angsuran — Bayar sebagian (DP)</option>
+              <option value="hutang">Hutang — Tidak ada pembayaran awal</option>
+            </select>
+            {formMode === "update" && (
+              <p className="mt-1 text-xs text-amber-600">
+                Mengubah status akan mereset riwayat pembayaran sebelumnya.
+              </p>
+            )}
+          </div>
 
-              {status === "angsuran" && (
-                <div>
-                  <label className="mb-1 block text-sm">Uang Muka (Rp) *</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={uangMuka}
-                    onChange={(e) => setUangMuka(e.target.value)}
-                    className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="Masukkan jumlah uang muka"
-                    required
-                  />
-                </div>
-              )}
-            </>
+          {status === "angsuran" && (formMode === "create" || status !== initialStatus) && (
+            <div>
+              <label className="mb-1 block text-sm">Uang Muka (Rp) *</label>
+              <input
+                type="number"
+                min={1}
+                value={uangMuka}
+                onChange={(e) => setUangMuka(e.target.value)}
+                className="w-full border rounded px-2 py-2 bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                placeholder="Masukkan jumlah uang muka"
+                required
+              />
+            </div>
           )}
 
           <div className="rounded border bg-gray-50 px-3 py-2 text-sm font-medium dark:border-gray-700 dark:bg-gray-800">
