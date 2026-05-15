@@ -1,6 +1,7 @@
 "use client";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import Penjualan from "@/components/table_master/penjualan";
+import PenjualanSummary from "@/components/table_master/penjualan/Summary";
 
 export default function JenisKomoditasPage() {
     const username = typeof window != "undefined" ? document.cookie.split('; ').find(row => row.startsWith('username='))?.split('=')[1] ?? "User" : ""
@@ -36,6 +37,7 @@ export default function JenisKomoditasPage() {
                         </div>
                     </div>
                 </div>
+                <PenjualanSummary />
                 <Penjualan />
             </div>
         </DashboardLayout>

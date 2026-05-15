@@ -864,6 +864,70 @@ penjualanApp.get("/export/data", async (c) => {
   }
 });
 
+penjualanApp.get("/summary", async (c) => {
+  try {
+    const bulan = c.req.query("bulan");
+    if (bulan && !/^\d{4}-\d{2}$/.test(bulan)) {
+      throw new AppError("Format bulan tidak valid. Gunakan: YYYY-MM", 400);
+    }
+
+    const db = getDb(c.env);
+
+    const bulanFilter = bulan
+      ? sql`strftime('%Y-%m', datetime(${penjualanTable.createdAt}, 'unixepoch')) = ${bulan}`
+      : undefined;
+
+    const rows = await db
+      .select({
+        status: penjualanTable.status,
+        count: sql<number>`count(*)`,
+        total_nominal: sql<number>`coalesce(sum(${penjualanTable.total_harga}), 0)`,
+        total_terbayar: sql<number>`coalesce(sum(${penjualanTable.total_terbayar}), 0)`,
+        total_sisa: sql<number>`coalesce(sum(${penjualanTable.total_harga} - ${penjualanTable.total_terbayar}), 0)`,
+      })
+      .from(penjualanTable)
+      .where(bulanFilter)
+      .groupBy(penjualanTable.status)
+      .all();
+
+    const summary: Record<string, { count: number; nominal: number; terbayar: number; sisa: number }> = {
+      lunas: { count: 0, nominal: 0, terbayar: 0, sisa: 0 },
+      angsuran: { count: 0, nominal: 0, terbayar: 0, sisa: 0 },
+      hutang: { count: 0, nominal: 0, terbayar: 0, sisa: 0 },
+    };
+
+    for (const row of rows as any[]) {
+      const s = row.status as string;
+      if (s in summary) {
+        summary[s] = {
+          count: Number(row.count),
+          nominal: Number(row.total_nominal),
+          terbayar: Number(row.total_terbayar),
+          sisa: Number(row.total_sisa),
+        };
+      }
+    }
+
+    const grand_total = Object.values(summary).reduce((sum, s) => sum + s.nominal, 0);
+    const grand_terbayar = Object.values(summary).reduce((sum, s) => sum + s.terbayar, 0);
+    const grand_sisa = Object.values(summary).reduce((sum, s) => sum + s.sisa, 0);
+    const grand_count = Object.values(summary).reduce((sum, s) => sum + s.count, 0);
+
+    return c.json({
+      success: true,
+      data: {
+        bulan: bulan ?? null,
+        lunas: summary.lunas,
+        angsuran: summary.angsuran,
+        hutang: summary.hutang,
+        grand: { count: grand_count, nominal: grand_total, terbayar: grand_terbayar, sisa: grand_sisa },
+      },
+    });
+  } catch (error) {
+    return handleAnyError(c, error);
+  }
+});
+
 penjualanApp.get("/:id", async (c) => {
   try {
     const id = c.req.param("id");
